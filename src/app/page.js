@@ -1,65 +1,170 @@
-import Image from "next/image";
+// src/app/page.js
+"use client";
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase.js';
+export default function HomePage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+// ... (после const [loading, setLoading] = useState(false); )
 
-export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+  // НОВОЕ СОСТОЯНИЕ для хранения информации о текущей сессии
+  const [session, setSession] = useState(null); 
+
+  // БЛОК, КОТОРЫЙ ПРОВЕРЯЕТ СТАТУС ВХОДА (ПРИ ЗАГРУЗКЕ И ПРИ ИЗМЕНЕНИИ)
+  useEffect(() => {
+    // 1. Проверяем текущую сессию при первой загрузке
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // 2. Настраиваем слушателя изменений (вход, выход, обновление токена)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+      }
+    );
+
+    // Обязательная очистка при выходе со страницы
+    return () => subscription.unsubscribe();
+  }, []);
+  
+  // ... (далее идут функции handleSignUp и handleSignIn)
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    
+    setLoading(false);
+
+    if (error) {
+      // ИСПОЛЬЗУЕМ ОБЫЧНЫЕ КАВЫЧКИ И КОНКАТЕНАЦИЮ (знак +)
+      // Это предотвращает синтаксические ошибки, которые были ранее.
+      alert('Ошибка регистрации: ' + error.message);
+      console.error(error);
+    } else {
+      alert('Регистрация успешна! Проверьте список пользователей в Supabase.');
+    }
+  };
+// ... (после const [loading, setLoading] = useState(false); )
+
+  // Состояния для формы ВХОДА
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  const handleSignIn = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: loginEmail,
+      password: loginPassword,
+    });
+    
+    setLoading(false);
+
+    if (error) {
+      alert('Ошибка входа: Неверный Email или Пароль (' + error.message + ')');
+      console.error(error);
+    } else {
+      alert('Вход успешен! Вы авторизованы.');
+      // Здесь мы будем обновлять интерфейс, чтобы показать, что пользователь вошел
+    }
+  };
+
+// ... (прокрутите до return)
+return (
+    <main style={{ padding: 40 }}>
+      {/* УСЛОВИЕ: Если есть активная сессия (session), показываем приветствие. 
+        Иначе, показываем формы.
+      */}
+      {session ? (
+        // =========================================================
+        // ЕСЛИ ПОЛЬЗОВАТЕЛЬ ВОШЕЛ
+        // =========================================================
+        <div>
+          <h1>👋 Добро пожаловать, {session.user.email}!</h1>
+          <p>Вы успешно авторизованы. Теперь вы можете видеть платный контент.</p>
+          
+          <button onClick={async () => {
+            await supabase.auth.signOut();
+          }} style={{ marginTop: '20px', padding: '10px 20px', backgroundColor: 'red', color: 'white', border: 'none', cursor: 'pointer' }}>
+            Выйти
+          </button>
+
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      ) : (
+        // =========================================================
+        // ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ ВОШЕЛ (показываем формы)
+        // =========================================================
+        <>
+          {/* ФОРМА 1: РЕГИСТРАЦИЯ */}
+          <h1>Регистрация нового пользователя</h1>
+          <form onSubmit={handleSignUp}>
+            <div>
+              <label>Email:</label>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+            <div>
+              <label>Пароль:</label>
+              <input
+                type="password"
+                placeholder="Пароль"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+            <button type="submit" disabled={loading} style={{ marginTop: '20px' }}>
+              {loading ? 'Загрузка...' : 'Зарегистрироваться'}
+            </button>
+          </form>
+
+          <hr style={{ margin: '40px 0' }} /> 
+
+          {/* ФОРМА 2: ВХОД */}
+          <h1>Вход</h1>
+          <form onSubmit={handleSignIn}>
+            <div>
+              <label>Email:</label>
+              <input
+                type="email"
+                placeholder="Email для входа"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+            <div>
+              <label>Пароль:</label>
+              <input
+                type="password"
+                placeholder="Пароль для входа"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+            <button type="submit" disabled={loading} style={{ marginTop: '20px' }}>
+              {loading ? 'Загрузка...' : 'Войти'}
+            </button>
+          </form>
+        </>
+      )}
+    </main>
   );
 }
