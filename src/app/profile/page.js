@@ -10,14 +10,14 @@ import Image from 'next/image';
 export default function ProfilePage() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('profile'); 
-    
+    const [activeTab, setActiveTab] = useState('profile');
+   
     const [orders, setOrders] = useState([]);      // История операций
     const [myProxies, setMyProxies] = useState([]); // Купленные прокси (ТОВАР)
-    
-    const [balance, setBalance] = useState(0); 
-    const [topupAmount, setTopupAmount] = useState(''); 
-    const [isProcessing, setIsProcessing] = useState(false); 
+   
+    const [balance, setBalance] = useState(0);
+    const [topupAmount, setTopupAmount] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const router = useRouter();
 
@@ -25,7 +25,7 @@ export default function ProfilePage() {
         const getUserData = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                router.push('/login'); 
+                router.push('/login');
                 return;
             }
             setUser(user);
@@ -52,7 +52,7 @@ export default function ProfilePage() {
                 .select('*')
                 .eq('owner_id', user.id) // Только мои
                 .eq('is_sold', true);    // Только проданные мне
-            
+           
             if (proxies) setMyProxies(proxies);
 
             setLoading(false);
@@ -154,9 +154,8 @@ export default function ProfilePage() {
         <div>
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Мои прокси</h2>
-                <button 
+                <button
                     onClick={() => {
-                        // Простая логика скачивания в TXT
                         const text = myProxies.map(p => `${p.ip}:${p.port}:${p.login}:${p.password}`).join('\n');
                         const blob = new Blob([text], { type: 'text/plain' });
                         const url = URL.createObjectURL(blob);
@@ -212,18 +211,18 @@ export default function ProfilePage() {
             <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 max-w-md">
                 <p className="text-sm text-gray-500 mb-2">Текущий счет</p>
                 <div className="text-4xl font-extrabold text-gray-900 mb-8">${(balance / 100).toFixed(2)}</div>
-                
+               
                 <div className="space-y-4">
                     <label className="block text-sm font-bold text-gray-700">Сумма пополнения ($)</label>
                     <div className="flex gap-3">
-                        <input 
-                            type="number" 
-                            placeholder="100" 
+                        <input
+                            type="number"
+                            placeholder="100"
                             value={topupAmount}
                             onChange={(e) => setTopupAmount(e.target.value)}
-                            className="flex-1 p-3 border border-gray-300 rounded-lg outline-none focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04]" 
+                            className="flex-1 p-3 border border-gray-300 rounded-lg outline-none focus:border-[#E85D04] focus:ring-1 focus:ring-[#E85D04]"
                         />
-                        <button 
+                        <button
                             onClick={handleTopUp}
                             disabled={isProcessing}
                             className="px-6 py-3 bg-[#E85D04] text-white font-bold rounded-lg hover:bg-[#cc5200] disabled:bg-gray-300 transition"
@@ -238,7 +237,7 @@ export default function ProfilePage() {
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] font-sans flex flex-col md:flex-row">
-            {/* SIDEBAR */}
+            {/* SIDEBAR (ОБНОВЛЕННЫЙ ДИЗАЙН) */}
             <aside className="w-full md:w-64 bg-[#181818] text-white flex-shrink-0 md:min-h-screen">
                 <div className="p-6 border-b border-[#333]">
                     <Link href="/" className="flex items-center gap-3 group">
@@ -248,13 +247,64 @@ export default function ProfilePage() {
                         <span className="font-extrabold tracking-tighter text-xl">GO<span className="text-[#E85D04]">PROXY</span></span>
                     </Link>
                 </div>
+                
+                {/* МЕНЮ НАВИГАЦИИ */}
                 <nav className="p-4 space-y-2">
-                    <button onClick={() => setActiveTab('profile')} className={`w-full text-left px-4 py-3 rounded-lg font-medium transition ${activeTab === 'profile' ? 'bg-[#E85D04] text-white' : 'text-gray-400 hover:bg-[#333] hover:text-white'}`}>👤 Профиль</button>
-                    <button onClick={() => setActiveTab('proxies')} className={`w-full text-left px-4 py-3 rounded-lg font-medium transition ${activeTab === 'proxies' ? 'bg-[#E85D04] text-white' : 'text-gray-400 hover:bg-[#333] hover:text-white'}`}>🌐 Мои прокси</button>
-                    <button onClick={() => setActiveTab('balance')} className={`w-full text-left px-4 py-3 rounded-lg font-medium transition ${activeTab === 'balance' ? 'bg-[#E85D04] text-white' : 'text-gray-400 hover:bg-[#333] hover:text-white'}`}>💰 Баланс</button>
+                    
+                    {/* 1. ПРОФИЛЬ */}
+                    <button
+                        onClick={() => setActiveTab('profile')}
+                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all font-bold ${activeTab === 'profile' ? 'bg-[#E85D04] text-white shadow-lg shadow-[#E85D04]/20' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-5 h-5 ${activeTab === 'profile' ? 'text-white' : 'text-[#E85D04]'}`}>
+                            <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
+                        </svg>
+                        Профиль
+                    </button>
+
+                    {/* 2. МОИ ПРОКСИ */}
+                    <button
+                        onClick={() => setActiveTab('proxies')}
+                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all font-bold ${activeTab === 'proxies' ? 'bg-[#E85D04] text-white shadow-lg shadow-[#E85D04]/20' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-5 h-5 ${activeTab === 'proxies' ? 'text-white' : 'text-[#E85D04]'}`}>
+                            <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM8.547 4.505a8.25 8.25 0 0111.636 11.636h-4.873L8.547 4.505zm-3.232 3.232a8.25 8.25 0 014.873 4.873H5.315v-4.873zm-1.06 6.373h4.873l6.764 6.764a8.25 8.25 0 01-11.637-11.637v4.873zM14.562 17.5l-6.764-6.764h4.873v4.873a8.25 8.25 0 001.891 1.891z" clipRule="evenodd" />
+                        </svg>
+                        Мои прокси
+                    </button>
+
+                    {/* 3. БАЛАНС */}
+                    <button
+                        onClick={() => setActiveTab('balance')}
+                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all font-bold ${activeTab === 'balance' ? 'bg-[#E85D04] text-white shadow-lg shadow-[#E85D04]/20' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={`w-5 h-5 ${activeTab === 'balance' ? 'text-white' : 'text-[#E85D04]'}`}>
+                            <path d="M10.464 2.314a1 1 0 00-1.928 0l-.7 3.492a1 1 0 00.954 1.194h.015L10.464 2.314zM10.064 7h2.736l-1.66 6.642a1 1 0 001.94 4.85l.7-3.492a1 1 0 00-.954-1.194h-.015l-1.66 6.642a1 1 0 00-1.94-4.85L10.064 7z" />
+                            <path fillRule="evenodd" d="M12 2.25a.75.75 0 01.75.75v.756a8.225 8.225 0 014.288 1.956.75.75 0 01-.984 1.135 6.725 6.725 0 00-3.304-1.55V7.75c0 1.916 1.34 3.036 3.09 3.495l.406.107c1.472.387 1.754 1.077 1.754 1.9 0 1.258-1.296 2.05-3.25 2.195V17.25a.75.75 0 01-1.5 0v-1.785a8.225 8.225 0 01-4.288-1.957.75.75 0 01.984-1.134 6.725 6.725 0 003.304 1.55v-2.427c0-1.916-1.34-3.036-3.09-3.495l-.406-.107c-1.472-.387-1.754-1.077-1.754-1.9 0-1.258 1.296-2.05 3.25-2.195V3a.75.75 0 01.75-.75z" clipRule="evenodd" />
+                        </svg>
+                        Баланс
+                    </button>
+                    
+                    {/* 4. КНОПКА "НА ГЛАВНУЮ" (С разделителем) */}
+                    <div className="pt-4 mt-4 border-t border-gray-800">
+                        <Link href="/" className="flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all font-bold text-gray-400 hover:bg-gray-800 hover:text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#E85D04]">
+                                <path d="M11.47 3.84a.75.75 0 011.06 0l8.635 8.635a.75.75 0 11-1.06 1.06l-.315-.315V20.25a.75.75 0 01-.75.75h-3.75a.75.75 0 01-.75-.75V14.25h-3v6a.75.75 0 01-.75.75H6.75a.75.75 0 01-.75-.75v-7.03l-.315.315a.75.75 0 11-1.06-1.06l8.635-8.635z" />
+                            </svg>
+                            На главную
+                        </Link>
+                    </div>
+
                 </nav>
+
+                {/* КНОПКА ВЫХОДА */}
                 <div className="p-4 mt-auto border-t border-[#333]">
-                    <button onClick={handleSignOut} className="w-full text-left px-4 py-2 text-gray-500 hover:text-white text-sm font-medium transition">← Выйти из аккаунта</button>
+                    <button onClick={handleSignOut} className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-500 hover:text-white text-sm font-medium transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                        </svg>
+                        Выйти из аккаунта
+                    </button>
                 </div>
             </aside>
 

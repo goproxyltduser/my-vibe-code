@@ -142,7 +142,7 @@ const PackageWidget = ({ product, quantities, handleBuy }) => {
                     <div className="font-bold text-lg text-white">Больше 2000 IP</div>
                 </div>
                 <a 
-                    href="https://t.me/ВАШ_ТЕЛЕГРАМ_АККАУНТ" 
+                    href="https://t.me/maxim_hayd" 
                     target="_blank"
                     className="flex items-center justify-between w-full p-3 border border-[#E85D04] text-[#E85D04] rounded-xl font-bold hover:bg-[#E85D04] hover:text-white transition text-sm"
                 >
@@ -477,7 +477,7 @@ export default function HomePage() {
 
                 {/* ДЕСКТОПНЫЕ КНОПКИ */}
                 <div className="hidden md:flex w-auto justify-end gap-4">
-                     <a href="https://t.me/ВАШ_ТЕЛЕГРАМ_АККАУНТ" target="_blank" className="px-5 py-2.5 border border-gray-600 text-gray-300 font-bold rounded-lg hover:border-white hover:text-white transition">Опт</a>
+                     <a href="https://t.me/maxim_hayd" target="_blank" className="px-5 py-2.5 border border-gray-600 text-gray-300 font-bold rounded-lg hover:border-white hover:text-white transition">Опт</a>
                      <Link href={session ? "/profile" : "/login"} className="px-6 py-2.5 bg-[#E85D04] text-white font-bold rounded-lg hover:bg-[#cc5200] transition shadow-lg">
                         {session ? "Кабинет" : "Войти"}
                     </Link>
@@ -495,8 +495,8 @@ export default function HomePage() {
                             <Link href={session ? "/profile" : "/login"} className="w-full py-3 bg-[#E85D04] text-white font-bold rounded-lg text-center">
                                 {session ? "Личный кабинет" : "Войти"}
                             </Link>
-                             <a href="https://t.me/ВАШ_ТЕЛЕГРАМ_АККАУНТ" target="_blank" className="w-full py-3 border border-gray-600 text-gray-300 font-bold rounded-lg text-center">
-                                Оптовые закупки
+                             <a href="https://t.me/maxim_hayd" target="_blank" className="w-full py-3 border border-gray-600 text-gray-300 font-bold rounded-lg text-center">
+                                Опт
                             </a>
                         </div>
                     </div>
@@ -509,9 +509,10 @@ export default function HomePage() {
 
             {/* 2. HERO SECTION */}
                                   {/* 2. HERO SECTION */}
-            <section className="py-20 px-6 md:px-12 bg-white overflow-hidden">
+                                          <section className="pt-6 pb-20 px-6 md:px-12 bg-white overflow-hidden">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12 text-center md:text-left">
-                    
+
+     
                     {/* ЛЕВАЯ КОЛОНКА (ТЕКСТ) */}
                     <div className="w-full md:w-1/2 z-10">
                         <div className="flex flex-col text-left">
@@ -536,7 +537,7 @@ export default function HomePage() {
                     </div>
 
                     {/* ПРАВАЯ КОЛОНКА (ИЛЛЮСТРАЦИЯ) */}
-                    <div className="w-full md:w-1/2 relative h-[400px] md:h-[600px] flex justify-center items-center">
+                                       <div className="hidden md:flex w-full md:w-1/2 relative h-[400px] md:h-[600px] justify-center items-center">
                         {/* Замените /hero.png на имя вашего файла в папке public */}
                         <Image 
                             src="/hero.png" 
@@ -546,6 +547,8 @@ export default function HomePage() {
                             priority
                         />
                     </div>
+
+
 
                 </div>
             </section>
@@ -649,15 +652,31 @@ export default function HomePage() {
             </section>
             
             {/* 5. BENEFITS */}
-                       <section id="benefits" className="py-24 px-6 bg-[#222222] text-white">
-
-
+                                                       <section id="benefits" className="py-24 px-6 bg-[#222222] text-white">
                 <div className="max-w-7xl mx-auto">
-                    <h2 className="text-4xl font-extrabold mb-16 uppercase text-left">Почему выбирают нас</h2>
+                    <h2 className="text-4xl font-extrabold mb-16 uppercase text-center">Почему выбирают нас</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                         {BENEFITS.map((item, index) => (
-                            <div key={index} className="p-0">
-                                <div className="text-5xl font-black text-gray-700 mb-4">0{index + 1}</div>
+                            <div key={index} className="transition duration-300">
+
+
+                                {/* ИКОНКИ ВМЕСТО ЦИФР */}
+                                <div className="mb-6 text-[#E85D04]">
+                                    {[
+                                        // 1. Скорость (Молния)
+                                        <svg key="0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>,
+                                        // 2. Сервис (Звезда)
+                                        <svg key="1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>,
+                                        // 3. Поддержка (Спасательный круг)
+                                        <svg key="2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M12.75 3.03v.568c0 .334.148.65.405.864l1.068.89c.442.369.535 1.01.216 1.49l-.51.766a2.25 2.25 0 01-1.161.886l-.143.048a1.107 1.107 0 00-.57 1.664c.369.555.169 1.307-.413 1.605-1.02.52-2.502.52-3.522 0-.582-.298-.782-1.05-.413-1.605a1.107 1.107 0 00-.57-1.664l-.143-.048a2.25 2.25 0 01-1.161-.886l-.51-.766a1.125 1.125 0 01.216-1.49l1.068-.89a1.125 1.125 0 00.405-.864v-.568m0 0a9.752 9.752 0 013 0m0 0a9.752 9.752 0 01-3 0m3 0h.008v.008h-.008V3.03zm0 0a9.75 9.75 0 010 17.94m-8.91-2.906A9.75 9.75 0 0112 15c4.316 0 8.01 2.656 9.47 6.488.163.428.611.64 1.05.503.447-.14.67-.621.503-1.05a11.25 11.25 0 00-20.04 0c-.167.429.056.91.503 1.05.439.137.887-.075 1.05-.503z" /></svg>,
+                                        // 4. Чистые IP (Щит)
+                                        <svg key="3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.746 3.746 0 0121 12z" /></svg>,
+                                        // 5. Низкие цены (Тег процента)
+                                        <svg key="4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" /></svg>,
+                                        // 6. Постоянство (Обновление/Продление)
+                                        <svg key="5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                                    ][index]}
+                                </div>
                                 <h4 className="text-2xl font-bold mb-3 text-white">{item.title}</h4>
                                 <p className="text-gray-400 leading-relaxed text-lg">{item.text}</p>
                             </div>
@@ -665,6 +684,8 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
+
+
 
             {/* 6. REVIEWS */}
                          <section className="py-24 px-6 bg-[#222222] overflow-hidden">
@@ -745,7 +766,7 @@ export default function HomePage() {
                                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .24z"/>
                                     </svg>
                                 </span> 
-                                <a href="https://t.me/ВАШ_ТЕЛЕГРАМ_АККАУНТ" target="_blank" className="hover:text-white transition text-gray-300">Telegram Support</a>
+                                <a href="https://t.me/maxim_hayd" target="_blank" className="hover:text-white transition text-gray-300">Telegram Support</a>
                             </p>
 
 
@@ -754,14 +775,32 @@ export default function HomePage() {
                     </div>
 
                     {/* 3. ДОКУМЕНТЫ (Справа, но текст выровнен по левому краю) */}
+                                       {/* 3. ДОКУМЕНТЫ (Справа, но текст выровнен по левому краю) */}
                     <div className="text-left">
                         <h4 className="text-sm font-bold mb-8 text-gray-500 uppercase tracking-widest">Документы</h4>
                         <ul className="space-y-4 text-sm text-gray-400 font-medium">
-                            <li><a href="https://docs.google.com/document/d/14XJKMDQ0ilQv1Y_n5-xBb2yMCeT0qbvqjYwUKtIMvfM/edit?usp=sharing" target="_blank" className="hover:text-[#E85D04] transition">Условия использования</a></li>
-                            <li><a href="#" className="hover:text-[#E85D04] transition">Политика конфиденциальности</a></li>
-                            <li><a href="#" className="hover:text-[#E85D04] transition">Публичная оферта</a></li>
+                            {/* Ссылка на /terms */}
+                            <li>
+                                <Link href="/terms" className="hover:text-[#E85D04] transition">
+                                    Условия использования
+                                </Link>
+                            </li>
+                            {/* Ссылка на /privacy */}
+                            <li>
+                                <Link href="/privacy" className="hover:text-[#E85D04] transition">
+                                    Политика конфиденциальности
+                                </Link>
+                            </li>
+                            {/* Ссылка на /offer */}
+                            <li>
+                                <Link href="/offer" className="hover:text-[#E85D04] transition">
+                                    Публичная оферта
+                                </Link>
+                            </li>
                         </ul>
                     </div>
+
+
 
                 </div>
 
