@@ -12,6 +12,7 @@ const USE_CASES = [
     { title: "Анализ эффективности рекламы", text: "Помогает маркетологам отслеживать эффективность рекламных кампаний, анализировать показатели. Сбор данных: С использованием прокси можно анонимно и безопасно собирать данные о поведении пользователей." },
     { title: "SEO (Search Engine Optimization)", text: "Автоматизация анализа конкурентов: проверка позиций, анализ ключевых слов. Избегание блокировок поисковых систем. Сбор данных для улучшения позиций сайта." },
     { title: "Арбитраж трафика", text: "Прокси позволяет арбитражникам оптимизировать рекламные кампании, избегая блокировок и ограничений со стороны рекламных платформ." },
+    { title: "IT", text: "— Тестирование и разработка сервисов из разных регионов.— Защита и анонимизация трафика разработчиков и серверов.— Обход лимитов API и стабильная работа автоматизаций." },
     { title: "Недоступный контент", text: "Доступ к недоступному контенту: Обходите региональные блокировки и свободно посещайте сайты, сервисы и платформы, закрытые в вашей стране." },
     { title: "Социальные сети", text: "Безопасная работа с аккаунтами: Управляйте несколькими аккаунтами, ведите рекламу и аналитику без блокировок и ограничений по IP." },
     { title: "Игры", text: "Играйте без задержек и ограничений: Прокси помогают снизить пинг, получить доступ к серверам из других регионов, обходить игровые блокировки." },
@@ -80,6 +81,86 @@ const AccordionItem = ({ title, text, isOpen, onClick }) => (
         </div>
     </div>
 );
+
+// === НОВОЕ МОДАЛЬНОЕ ОКНО (POPUP) ===
+// === МОДАЛЬНОЕ ОКНО С ВЫБОРОМ ПЛАТЕЖКИ (ОБНОВЛЕННОЕ) ===
+const PaymentModal = ({ isOpen, onClose, data, userBalance, onPayBalance, onPayGateway, isProcessing }) => {
+    if (!isOpen || !data) return null;
+
+    const canPayWithBalance = userBalance >= data.amountCents;
+    const priceDollars = (data.amountCents / 100).toFixed(2);
+    const balanceDollars = (userBalance / 100).toFixed(2);
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
+                
+                <div className="bg-gray-50 p-6 border-b border-gray-100 text-center">
+                    <h3 className="text-xl font-black text-gray-900 uppercase">Оплата заказа</h3>
+                    <p className="text-gray-500 text-sm mt-1">{data.productName}</p>
+                </div>
+
+                <div className="p-6 space-y-4">
+                    <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Количество:</span>
+                        <span className="font-bold text-gray-900">{data.qty} шт.</span>
+                    </div>
+                    <div className="flex justify-between text-lg">
+                        <span className="font-bold text-gray-800">К оплате:</span>
+                        <span className="font-extrabold text-[#E85D04]">${priceDollars}</span>
+                    </div>
+                    
+                    <div className={`p-3 rounded-lg text-sm text-center border ${canPayWithBalance ? 'bg-green-50 border-green-100 text-green-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
+                        Ваш баланс: <strong>${balanceDollars}</strong>
+                    </div>
+                </div>
+
+                <div className="p-6 pt-0 flex flex-col gap-3">
+                    {/* 1. ОПЛАТА С БАЛАНСА */}
+                    {canPayWithBalance && (
+                        <button 
+                            onClick={onPayBalance} 
+                            disabled={isProcessing}
+                            className="w-full py-3 bg-[#E85D04] text-white font-bold rounded-xl hover:bg-[#cc5200] transition shadow-lg"
+                        >
+                            {isProcessing ? 'Обработка...' : 'Списать с баланса'}
+                        </button>
+                    )}
+                    
+                    <div className="relative flex py-2 items-center">
+                        <div className="flex-grow border-t border-gray-200"></div>
+                        <span className="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase">Или выберите способ</span>
+                        <div className="flex-grow border-t border-gray-200"></div>
+                    </div>
+
+                    {/* 2. DV.NET */}
+                    <button 
+                        onClick={() => onPayGateway('dvnet')}
+                        disabled={isProcessing}
+                        className="w-full py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition shadow-lg flex justify-between px-6 items-center"
+                    >
+                        <span>DV.Net</span>
+                        <span className="text-xs font-normal opacity-70">Карты / Крипта</span>
+                    </button>
+
+                    {/* 3. LAVA.RU (НОВАЯ КНОПКА) */}
+                    <button 
+                        onClick={() => onPayGateway('lava')}
+                        disabled={isProcessing}
+                        className="w-full py-3 bg-[#702cf9] text-white font-bold rounded-xl hover:bg-[#5b23cc] transition shadow-lg flex justify-between px-6 items-center"
+                    >
+                        <span>Lava.ru</span>
+                        <span className="text-xs font-normal opacity-70">RUB / Карты / Qiwi</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+
 
 // === ВИДЖЕТ ГОТОВЫХ ПАКЕТОВ (ТЕМНЫЙ СТИЛЬ) ===
 const PackageWidget = ({ product, quantities, handleBuy }) => {
@@ -155,14 +236,17 @@ const PackageWidget = ({ product, quantities, handleBuy }) => {
 };
 
 // === КАРТОЧКА ТАРИФА (КАЛЬКУЛЯТОР - ПОЛНЫЙ ФУНКЦИОНАЛ) ===
+// === КАРТОЧКА ТАРИФА (КАЛЬКУЛЯТОР) - ОБНОВЛЕННАЯ ===
+// === КАРТОЧКА ТАРИФА (КАЛЬКУЛЯТОР) - ЛОГИКА РЕДИРЕКТА НА CHECKOUT ===
 const PricingCard = ({ product, currentSession, router, userBalance }) => {
     const isIPv6 = product.name.toLowerCase().includes('ipv6');
-    const minQty = product.min_quantity > 0 ? product.min_quantity : 1; 
-    const [quantity, setQuantity] = useState(minQty); 
-    const [period, setPeriod] = useState(1); 
-    const [calculations, setCalculations] = useState({ total: '0.00', discount: 0 });
-    const [country, setCountry] = useState('Россия'); 
-    const [isProcessing, setIsProcessing] = useState(false); 
+    const minQty = product.min_quantity > 0 ? product.min_quantity : 1;
+    const [quantity, setQuantity] = useState(minQty);
+    const [period, setPeriod] = useState(1);
+    const [calculations, setCalculations] = useState({ total: '0.00', saved: '0.00', discount: 0 });
+    const [country, setCountry] = useState('Россия');
+    
+    // Нам больше не нужны состояния isProcessing и showPaymentChoice для редиректа
 
     useEffect(() => {
         let discount = 0;
@@ -173,98 +257,52 @@ const PricingCard = ({ product, currentSession, router, userBalance }) => {
             const rawDiscount = Math.floor(quantity / 5) * 5;
             discount = Math.min(rawDiscount, 40);
         }
-
         const baseCost = product.price_per_unit * quantity;
         const discountFactor = (100 - discount) / 100;
-        
-        // Скидка за период
-        let periodDiscount = 0;
-        if (period === 3) periodDiscount = 0.05;
-        if (period === 6) periodDiscount = 0.10;
-        
-        const finalTotal = (baseCost * discountFactor) * period * (1 - periodDiscount);
-        
+        const finalTotal = (baseCost * discountFactor) * period * (1 - (period === 3 ? 0.05 : period === 6 ? 0.1 : 0));
+       
+        // Считаем полную цену без скидок для отображения выгоды
+        const fullPrice = baseCost * period;
+        const saved = fullPrice - finalTotal;
+       
         setCalculations({
             total: (finalTotal / 100).toFixed(2),
+            saved: (saved / 100).toFixed(2),
             discount: discount
         });
-        
-    }, [product.price_per_unit, quantity, period, isIPv6]); 
 
-       const handleBuyClick = async () => {
-        if (!currentSession || !currentSession.user || !currentSession.user.id) { 
-            alert("Для оформления заказа необходимо войти в Личный кабинет.");
-            router.push('/login');
-            return;
-        }
-        setIsProcessing(true); 
+    }, [product.price_per_unit, quantity, period, isIPv6]);
+
+
+    // ЛОГИКА: РЕДИРЕКТ НА CHECKOUT (БЕЗ РЕГИСТРАЦИИ)
+    const handleBuyClick = () => {
         const amountCents = Math.round(parseFloat(calculations.total) * 100);
 
-        // --- ЛОГИКА БАЛАНСА ---
-        if (userBalance >= amountCents) {
-             const confirmed = window.confirm(`Списать $${calculations.total} с баланса?`);
-             if (confirmed) {
-                 try {
-                    const res = await fetch('/api/purchase', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            userId: currentSession.user.id, 
-                            product: { name: product.name, id: product.id },
-                            quantity, period, country, amountCents,
-                        }),
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        alert('Покупка успешна!');
-                        window.location.href = '/profile';
-                    } else {
-                        alert(data.error);
-                    }
-                 } catch(e) { alert('Ошибка сети'); }
-                 setIsProcessing(false);
-                 return;
-             }
-        }
-        // ---------------------
-
-        try {
-            const response = await fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    userId: currentSession.user.id, 
-                    product: { name: product.name, id: product.id },
-                    quantity, period, country, amountCents,
-                }),
-            });
-            const data = await response.json();
-            if (response.ok) window.location.assign(data.url);
-            else alert(`Ошибка: ${data.error}`);
-        } catch (error) {
-            alert('Ошибка сети.');
-        } finally {
-            setIsProcessing(false);
-        }
+        const params = new URLSearchParams({
+            id: product.id,
+            name: product.name,
+            price: amountCents,
+            qty: quantity,
+            period: period,
+            country: country
+        });
+        
+        router.push(`/checkout?${params.toString()}`);
     };
 
+
     return (
-        <div className="flex flex-col border border-gray-200 p-6 rounded-2xl w-full max-w-sm m-4 bg-white hover:border-gray-400 transition-all duration-300 relative shadow-sm hover:shadow-xl">
-            {/* БЕЙДЖИК */}
-            <div className={`absolute top-0 right-0 px-4 py-1.5 rounded-bl-xl text-xs font-bold text-white ${isIPv6 ? 'bg-gray-800' : 'bg-primary'}`}>
+        <div className="flex flex-col border border-gray-200 p-8 rounded-2xl w-full max-w-sm m-4 bg-white hover:border-[#E85D04] transition-all duration-300 relative shadow-lg">
+            <div className={`absolute top-0 right-0 px-4 py-1.5 rounded-bl-xl text-xs font-bold text-white ${isIPv6 ? 'bg-gray-800' : 'bg-[#E85D04]'}`}>
                 {isIPv6 ? 'IPv6' : 'IPv4'}
             </div>
 
-            <div className="mb-4">
+            <div className="mb-6">
                 <h3 className="text-2xl font-bold text-gray-900">{product.name}</h3>
                 <p className="text-sm text-gray-500 mt-1">{isIPv6 ? 'Для соц.сетей и парсинга' : 'Универсальные'}</p>
             </div>
-            
-            <p className="font-medium text-gray-600 mb-6 border-b border-gray-100 pb-4">
-                Цена от: <span className="text-lg font-bold text-gray-900">${(product.price_per_unit / 100).toFixed(2)}</span> / шт
-            </p>
-            
-            <div className="space-y-4 mb-6">
+           
+            <div className="space-y-5 mb-8">
                 <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Страна</label>
                     <select value={country} onChange={(e) => setCountry(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-black focus:ring-0 outline-none text-gray-800 font-medium cursor-pointer">
@@ -274,12 +312,10 @@ const PricingCard = ({ product, currentSession, router, userBalance }) => {
                         <option value="Швейцария">🇨🇭 Швейцария</option>
                     </select>
                 </div>
-
                 <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Количество (Мин. {minQty})</label>
                     <input type="number" min={minQty} value={quantity} onChange={(e) => setQuantity(Math.max(minQty, Number(e.target.value)))} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-black focus:ring-0 outline-none text-gray-800 font-medium" />
                 </div>
-
                 <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Срок аренды</label>
                     <select value={period} onChange={(e) => setPeriod(Number(e.target.value))} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-black focus:ring-0 outline-none text-gray-800 font-medium cursor-pointer">
@@ -289,41 +325,50 @@ const PricingCard = ({ product, currentSession, router, userBalance }) => {
                     </select>
                 </div>
             </div>
-            
-            {/* ИНФОБЛОК */}
+           
             <div className="flex justify-between items-center text-xs text-gray-600 mb-6 bg-gray-100 p-3 rounded-lg border border-gray-200">
-                <div className="flex flex-col items-center">
-                    <span className="text-gray-400 mb-1">Трафик</span>
-                    <strong className="text-gray-900 text-lg">∞</strong>
-                </div>
-                <span className="h-8 w-px bg-gray-300"></span>
-                <div className="flex flex-col items-center">
-                    <span className="text-gray-400 mb-1">Скорость</span>
-                    <strong className="text-gray-900">100 Мб/с</strong>
-                </div>
-                <span className="h-8 w-px bg-gray-300"></span>
-                <div className="flex flex-col items-center">
-                    <span className="text-gray-400 mb-1">Мин. заказ</span>
-                    <strong className="text-gray-900">{minQty} шт.</strong>
-                </div>
+                <span>Трафик: <strong>∞</strong></span>
+                <span>Скорость: <strong>100 Мб/с</strong></span>
             </div>
 
-            <div className="mt-auto">
-                <div className="flex justify-between items-end mb-6 pt-6 border-t border-gray-100">
-                    <div className="flex flex-col">
-                        <span className="text-gray-400 text-xs font-medium uppercase mb-1">Итого к оплате</span>
-                        <span className="text-4xl font-extrabold text-gray-900">${calculations.total}</span>
+            {/* ИНФОРМАЦИЯ О СКИДКЕ */}
+            <div className="mb-6 -mt-4 text-center">
+                <p className="text-sm font-bold text-[#E85D04]">
+                    Скидка от {isIPv6 ? '50' : '5'} прокси. До 50% за объем и срок
+                </p>
+            </div>
+
+            <div className="mt-auto relative">
+                {/* 1. БЛОК ЦЕНЫ И СКИДКИ */}
+                <div className="flex flex-col gap-1 mb-6 pt-6 border-t border-gray-100">
+                    <div className="flex justify-between items-end">
+                        <span className="text-gray-400 text-xs font-bold uppercase mb-1">Итого к оплате</span>
+                        <span className="text-3xl font-extrabold text-gray-900">${calculations.total}</span>
                     </div>
-                    {calculations.discount > 0 && <span className="text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded border border-green-100">Скидка -{calculations.discount}%</span>}
+
+                    {/* Сумма скидки */}
+                    {parseFloat(calculations.saved) > 0 && (
+                        <div className="flex justify-between items-center text-xs font-medium">
+                            <span className="text-gray-400 text-xs font-bold uppercase mb-1">СУММА СКИДКИ:</span>
+                            <span className="text-gray-500 font-extrabold text-sm">
+                                -${calculations.saved} <span className="text-green-400 font-medium">(-{calculations.discount}%)</span>
+                            </span>
+                        </div>
+                    )}
                 </div>
-                
-                <button onClick={handleBuyClick} disabled={isProcessing} className="w-full py-4 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors active:scale-95 duration-200 text-lg shadow-lg">
-                    {isProcessing ? 'Обработка...' : 'Купить'}
+               
+                {/* 2. КНОПКА КУПИТЬ (ПЕРЕХОД НА CHECKOUT) */}
+                <button onClick={handleBuyClick} className="w-full py-4 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition-colors active:scale-95 duration-200 text-lg shadow-lg">
+                    Купить
                 </button>
             </div>
         </div>
     );
 };
+
+
+
+
 
 export default function HomePage() {
     const [products, setProducts] = useState([]);
@@ -331,7 +376,10 @@ export default function HomePage() {
     const [loading, setLoading] = useState(false);
     const [openUseCase, setOpenUseCase] = useState(null); 
     const [openFaq, setOpenFaq] = useState(null); 
-    const [balance, setBalance] = useState(0); 
+      const [balance, setBalance] = useState(0); // Баланс пользователя
+    const [modalData, setModalData] = useState(null); // Данные для модалки
+    const [isModalProcessing, setIsModalProcessing] = useState(false); // Загрузка модалки
+
     // НОВОЕ СОСТОЯНИЕ ДЛЯ МОБИЛЬНОГО МЕНЮ
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
     const router = useRouter();
@@ -339,27 +387,22 @@ export default function HomePage() {
 
 
     // ОБНОВЛЕННЫЙ useEffect: Загружает сессию И баланс
-    useEffect(() => {
-        const initSession = async () => {
+     useEffect(() => {
+        const init = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             setSession(session);
-            
+            // Если пользователь есть, грузим баланс
             if (session?.user) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('balance')
-                    .eq('id', session.user.id)
-                    .single();
-                if (profile) setBalance(profile.balance);
+                const { data: p } = await supabase.from('profiles').select('balance').eq('id', session.user.id).single();
+                if (p) setBalance(p.balance);
             }
         };
-        initSession();
+        init();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => { 
-            setSession(session); 
-        });
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => { setSession(session); });
         return () => subscription.unsubscribe();
     }, []);
+
 
 
 
@@ -373,12 +416,8 @@ export default function HomePage() {
         fetchProducts();
     }, []);
 
-       const handlePackageBuy = async (product, qty) => {
-        if (!session || !session.user) {
-            alert("Для покупки войдите в Личный кабинет");
-            router.push('/login');
-            return;
-        }
+          const handlePackageBuy = (product, qty) => {
+        // 1. Считаем цену, чтобы передать в URL
         const isIPv6 = product.name.toLowerCase().includes('ipv6');
         let discount = 0;
         if (isIPv6) {
@@ -390,49 +429,21 @@ export default function HomePage() {
         const total = discountedPricePerUnit * qty;
         const amountCents = Math.round(total);
 
-        // --- НОВАЯ ЛОГИКА: ПРОВЕРКА БАЛАНСА ---
-        if (balance >= amountCents) {
-             const confirmed = window.confirm(`Списать $${(amountCents/100).toFixed(2)} с вашего баланса? (Ваш баланс: $${(balance/100).toFixed(2)})`);
-             if (confirmed) {
-                 try {
-                    const res = await fetch('/api/purchase', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            userId: session.user.id, 
-                            product: { name: product.name, id: product.id },
-                            quantity: qty, period: 1, country: 'Россия', amountCents,
-                        }),
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        alert('Покупка успешна! Прокси добавлены в кабинет.');
-                        window.location.href = '/profile';
-                    } else {
-                        alert('Ошибка: ' + data.error);
-                    }
-                 } catch(e) { alert('Ошибка сети'); }
-                 return;
-             }
-        }
-        // ---------------------------------------
-
-        try {
-            const response = await fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    userId: session.user.id, product: { name: product.name, id: product.id },
-                    quantity: qty, period: 1, country: 'Россия', amountCents,
-                }),
-            });
-            const data = await response.json();
-            if (response.ok) window.location.assign(data.url);
-            else alert(`Ошибка: ${data.error}`);
-        } catch (error) {
-            alert('Ошибка сети.');
-        }
+        // 2. Перенаправляем на страницу оформления (/checkout)
+        const params = new URLSearchParams({
+            id: product.id,
+            name: product.name,
+            price: amountCents,
+            qty: qty,
+            period: 1, // Для пакетов всегда 1 месяц
+            country: 'Россия'
+        });
+        
+        router.push(`/checkout?${params.toString()}`);
     };
+
+
+
 
 
 
@@ -513,28 +524,39 @@ export default function HomePage() {
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12 text-center md:text-left">
 
      
-                    {/* ЛЕВАЯ КОЛОНКА (ТЕКСТ) */}
+                                                                     {/* ЛЕВАЯ КОЛОНКА (ТЕКСТ) */}
                     <div className="w-full md:w-1/2 z-10">
                         <div className="flex flex-col text-left">
-                            <h1 className="text-6xl md:text-8xl font-black text-gray-900 tracking-tighter leading-none mb-2">
+                            {/* Заголовок: меньше на мобильном (4xl), большой на ПК (8xl) */}
+                            <h1 className="text-4xl md:text-8xl font-black text-gray-900 tracking-tighter leading-none mb-2">
                                 GOPROXY
                             </h1>
-                            <h2 className="text-3xl md:text-5xl font-bold text-[#E85D04] uppercase tracking-tight leading-none mb-6">
+                            {/* Подзаголовок: меньше на мобильном (2xl), большой на ПК (5xl) */}
+                            <h2 className="text-2xl md:text-5xl font-bold text-[#E85D04] uppercase tracking-tight leading-none mb-4">
                                 ПРОКСИ ПОД ЛЮБЫЕ ЦЕЛИ
                             </h2>
+
+                            {/* Гарантия: меньше на мобильном (sm), больше на ПК (xl) */}
+                            <p className="text-sm md:text-xl font-bold text-gray-900 mb-6">
+                                Гарантия возврата 48ч. Выдача в одни руки.
+                            </p>
                             
-                            <div className="mt-2 mb-10">
-                                <p className="text-xl text-gray-600 font-medium mb-1 leading-tight">
+                            <div className="mb-8 md:mb-10">
+                                {/* Слоган: меньше на мобильном (lg), больше на ПК (2xl) */}
+                                <p className="text-lg md:text-2xl text-gray-600 font-medium mb-1 leading-tight">
                                     Быстрые. Стабильные. Безопасные.
                                 </p>
-                                <p className="text-sm text-gray-400 font-medium">HTTP/SOCKS5 • Выдача в одни руки</p>
+                                <p className="text-xs md:text-sm text-gray-400 font-medium">HTTP/SOCKS5</p>
                             </div>
                         </div>
 
-                        <div className="flex flex-col md:flex-row gap-4 justify-center md:justify-start"> 
-                            <a href="#tariffs" className="px-8 py-4 bg-[#E85D04] text-white font-bold rounded-xl text-lg shadow-xl shadow-[#E85D04]/30 hover:bg-[#cc5200] transition">Подобрать тариф</a>
+                        {/* Кнопка остается как была */}
+                        <div className="flex flex-col md:flex-row gap-4 justify-start"> 
+                            <a href="#tariffs" className="px-8 py-4 bg-[#E85D04] text-white font-bold rounded-xl text-lg shadow-xl shadow-[#E85D04]/30 hover:bg-[#cc5200] transition text-center">Подобрать тариф</a>
                         </div>
                     </div>
+
+
 
                     {/* ПРАВАЯ КОЛОНКА (ИЛЛЮСТРАЦИЯ) */}
                                        <div className="hidden md:flex w-full md:w-1/2 relative h-[400px] md:h-[600px] justify-center items-center">
@@ -609,24 +631,121 @@ export default function HomePage() {
                                 Обратиться в поддержку
                             </a>
                         </div>
-                                               {/* Что такое прокси (ФОН РАСТЯНУТ НА ВЕСЬ ЭКРАН) */}
-                        <div className="w-screen relative left-1/2 -translate-x-1/2 bg-white py-16 px-6"> 
-                            <div className="max-w-4xl mx-auto text-center">
-                                <h3 className="text-3xl md:text-4xl font-black mb-6 text-gray-900 uppercase tracking-wide">
-                                    ЧТО ТАКОЕ <span className="text-[#E85D04]">ПРОКСИ?</span>
-                                </h3>
-                                                               <div className="text-gray-700 space-y-4 text-lg leading-relaxed max-w-3xl mx-auto text-left font-bold">
-                                    <p>
-                                        Proxy — это посредник между пользователем и интернет-ресурсом. Прокси выполняет функцию передачи запросов, скрывая реальный IP-адрес, обеспечивая анонимность и безопасность.
-                                    </p>
-                                    <p>
-                                        Они широко используются для обхода географических ограничений, увеличения скорости доступа, фильтрации трафика и парсинга.
-                                    </p>
+                                               
+                    </div>
+                </div>
+            </section>
+
+                       {/* === НОВЫЙ БЛОК: ПРЕИМУЩЕСТВА (ТЕМНЫЙ) === */}
+            <section id="benefits" className="py-24 px-6 bg-[#222222] text-white">
+                <div className="max-w-7xl mx-auto">
+                    <h2 className="text-4xl font-extrabold mb-16 uppercase text-center">Почему выбирают нас</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                        {BENEFITS.map((item, index) => (
+                            <div key={index} className="flex flex-col items-start transition duration-300">
+                                <div className="mb-6 text-[#E85D04]">
+                                    {[
+                                        <svg key="0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>,
+                                        <svg key="1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>,
+                                        <svg key="2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M12.75 3.03v.568c0 .334.148.65.405.864l1.068.89c.442.369.535 1.01.216 1.49l-.51.766a2.25 2.25 0 01-1.161.886l-.143.048a1.107 1.107 0 00-.57 1.664c.369.555.169 1.307-.413 1.605-1.02.52-2.502.52-3.522 0-.582-.298-.782-1.05-.413-1.605a1.107 1.107 0 00-.57-1.664l-.143-.048a2.25 2.25 0 01-1.161-.886l-.51-.766a1.125 1.125 0 01.216-1.49l1.068-.89a1.125 1.125 0 00.405-.864v-.568m0 0a9.752 9.752 0 013 0m0 0a9.752 9.752 0 01-3 0m3 0h.008v.008h-.008V3.03zm0 0a9.75 9.75 0 010 17.94m-8.91-2.906A9.75 9.75 0 0112 15c4.316 0 8.01 2.656 9.47 6.488.163.428.611.64 1.05.503.447-.14.67-.621.503-1.05a11.25 11.25 0 00-20.04 0c-.167.429.056.91.503 1.05.439.137.887-.075 1.05-.503z" /></svg>,
+                                        <svg key="3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.746 3.746 0 0121 12z" /></svg>,
+                                        <svg key="4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" /></svg>,
+                                        <svg key="5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                                    ][index]}
                                 </div>
-
-
+                                <h4 className="text-2xl font-bold mb-3 text-white">{item.title}</h4>
+                                <p className="text-gray-400 leading-relaxed text-lg">{item.text}</p>
                             </div>
+                        ))}
+                    </div>
+                                                  {/* КНОПКА "КУПИТЬ" ПОД ПРЕИМУЩЕСТВАМИ */}
+                    <div className="mt-12 text-center md:text-left">
+                        <a href="#tariffs" className="inline-block px-12 py-4 bg-[#E85D04] text-white font-bold rounded-xl hover:bg-[#cc5200] transition shadow-lg shadow-[#E85D04]/20">
+                            Купить
+                        </a>
+                    </div>
+
+
+                </div>
+            </section>
+
+                       {/* === НОВЫЙ БЛОК: ЛИЧНЫЙ КАБИНЕТ === */}
+            <section className="py-24 px-6 bg-white overflow-hidden border-b border-gray-100">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
+                    
+                    {/* ТЕКСТОВАЯ ЧАСТЬ (Слева) */}
+                    <div className="w-full md:w-1/2">
+                        <h2 className="text-3xl md:text-5xl font-black text-gray-900 uppercase tracking-tight leading-none mb-6">
+                            ВАШ УДОБНЫЙ <br/>
+                            <span className="text-[#E85D04]">ЛИЧНЫЙ КАБИНЕТ</span>
+                        </h2>
+                        <p className="text-xl text-gray-500 mb-10 leading-relaxed font-medium">
+                            Мы убрали всё лишнее, чтобы вы управляли своими прокси в два клика.
+                        </p>
+
+                        <ul className="space-y-8">
+                            <li className="flex gap-5">
+                                <div className="shrink-0 w-8 h-8 rounded-full bg-[#E85D04]/10 flex items-center justify-center mt-1">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#E85D04]"></div>
+                                </div>
+                                <div>
+                                    <strong className="block text-gray-900 text-xl mb-2">Всё как на ладони</strong>
+                                    <p className="text-gray-600 leading-relaxed text-lg">Баланс, история операций и статус заказов — на одной странице.</p>
+                                </div>
+                            </li>
+                            <li className="flex gap-5">
+                                <div className="shrink-0 w-8 h-8 rounded-full bg-[#E85D04]/10 flex items-center justify-center mt-1">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#E85D04]"></div>
+                                </div>
+                                <div>
+                                    <strong className="block text-gray-900 text-xl mb-2">Мгновенный доступ</strong>
+                                    <p className="text-gray-600 leading-relaxed text-lg">Получайте данные (IP, Login, Pass) сразу после оплаты.</p>
+                                </div>
+                            </li>
+                            <li className="flex gap-5">
+                                <div className="shrink-0 w-8 h-8 rounded-full bg-[#E85D04]/10 flex items-center justify-center mt-1">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#E85D04]"></div>
+                                </div>
+                                <div>
+                                    <strong className="block text-gray-900 text-xl mb-2">Автоматизация</strong>
+                                    <p className="text-gray-600 leading-relaxed text-lg">С балансом вам не придется постоянно бегать по платежкам при покупке и при продлении: за вас это сделает баланс.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    {/* ИЗОБРАЖЕНИЕ (Справа) */}
+                    <div className="w-full md:w-1/2 relative">
+                        {/* Тень и скругление для красоты */}
+                        <div className="rounded-2xl shadow-2xl border border-gray-200 overflow-hidden bg-gray-50 transform hover:scale-[1.02] transition duration-500">
+                            <Image 
+                                src="/dashboard.png" 
+                                alt="Личный кабинет GOPROXY" 
+                                width={800} 
+                                height={600} 
+                                className="w-full h-auto object-cover"
+                            />
                         </div>
+                    </div>
+
+                </div>
+            </section>
+
+
+
+            {/* === НОВЫЙ БЛОК: ЧТО ТАКОЕ ПРОКСИ (БЕЛЫЙ) === */}
+            <section className="bg-white py-24 px-6"> 
+                <div className="max-w-4xl mx-auto text-center">
+                    <h3 className="text-3xl md:text-4xl font-black mb-6 text-gray-900 uppercase tracking-wide">
+                        ЧТО ТАКОЕ <span className="text-[#E85D04]">ПРОКСИ?</span>
+                    </h3>
+                    <div className="text-gray-700 space-y-4 text-lg leading-relaxed max-w-3xl mx-auto text-left font-bold">
+                        <p>
+                            Proxy — это посредник между пользователем и интернет-ресурсом. Прокси выполняет функцию передачи запросов, скрывая реальный IP-адрес, обеспечивая анонимность и безопасность.
+                        </p>
+                        <p>
+                            Они широко используются для обхода географических ограничений, увеличения скорости доступа, фильтрации трафика и парсинга.
+                        </p>
                     </div>
                 </div>
             </section>
@@ -651,39 +770,7 @@ export default function HomePage() {
                 </div>
             </section>
             
-            {/* 5. BENEFITS */}
-                                                       <section id="benefits" className="py-24 px-6 bg-[#222222] text-white">
-                <div className="max-w-7xl mx-auto">
-                    <h2 className="text-4xl font-extrabold mb-16 uppercase text-center">Почему выбирают нас</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                        {BENEFITS.map((item, index) => (
-                            <div key={index} className="transition duration-300">
-
-
-                                {/* ИКОНКИ ВМЕСТО ЦИФР */}
-                                <div className="mb-6 text-[#E85D04]">
-                                    {[
-                                        // 1. Скорость (Молния)
-                                        <svg key="0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>,
-                                        // 2. Сервис (Звезда)
-                                        <svg key="1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>,
-                                        // 3. Поддержка (Спасательный круг)
-                                        <svg key="2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M12.75 3.03v.568c0 .334.148.65.405.864l1.068.89c.442.369.535 1.01.216 1.49l-.51.766a2.25 2.25 0 01-1.161.886l-.143.048a1.107 1.107 0 00-.57 1.664c.369.555.169 1.307-.413 1.605-1.02.52-2.502.52-3.522 0-.582-.298-.782-1.05-.413-1.605a1.107 1.107 0 00-.57-1.664l-.143-.048a2.25 2.25 0 01-1.161-.886l-.51-.766a1.125 1.125 0 01.216-1.49l1.068-.89a1.125 1.125 0 00.405-.864v-.568m0 0a9.752 9.752 0 013 0m0 0a9.752 9.752 0 01-3 0m3 0h.008v.008h-.008V3.03zm0 0a9.75 9.75 0 010 17.94m-8.91-2.906A9.75 9.75 0 0112 15c4.316 0 8.01 2.656 9.47 6.488.163.428.611.64 1.05.503.447-.14.67-.621.503-1.05a11.25 11.25 0 00-20.04 0c-.167.429.056.91.503 1.05.439.137.887-.075 1.05-.503z" /></svg>,
-                                        // 4. Чистые IP (Щит)
-                                        <svg key="3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.746 3.746 0 0121 12z" /></svg>,
-                                        // 5. Низкие цены (Тег процента)
-                                        <svg key="4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" /></svg>,
-                                        // 6. Постоянство (Обновление/Продление)
-                                        <svg key="5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12"><path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
-                                    ][index]}
-                                </div>
-                                <h4 className="text-2xl font-bold mb-3 text-white">{item.title}</h4>
-                                <p className="text-gray-400 leading-relaxed text-lg">{item.text}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
+           
 
 
 
@@ -709,6 +796,14 @@ export default function HomePage() {
                             </div>
                         ))}
                     </div>
+                                                  {/* КНОПКА "КУПИТЬ" ПОД ПРЕИМУЩЕСТВАМИ */}
+                    <div className="mt-12 text-center md:text-left">
+                        <a href="#tariffs" className="inline-block px-12 py-4 bg-[#E85D04] text-white font-bold rounded-xl hover:bg-[#cc5200] transition shadow-lg shadow-[#E85D04]/20">
+                            Купить
+                        </a>
+                    </div>
+
+
                 </div>
             </section>
 
@@ -745,6 +840,18 @@ export default function HomePage() {
                             <div className="text-3xl font-extrabold mb-6 text-[#E85D04] tracking-tighter">GOPROXY</div>
                             <p className="text-gray-400 mb-6 text-sm leading-relaxed">Proxy под любые цели. Быстрые, стабильные и безопасные IPv4 и IPv6 прокси.</p>
                             <p className="text-gray-600 text-xs">© 2025 GOPROXY LTD. Все права защищены.</p>
+                                                          {/* ЛОГОТИП ПЛАТЕЖКИ */}
+                            <div className="mt-6">
+                                <Image 
+                                    src="/lava.png" 
+                                    alt="Lava Payment" 
+                                    width={120} 
+                                    height={40} 
+                                    className="object-contain opacity-80 hover:opacity-100 transition"
+                                />
+                            </div>
+
+
                         </div>
 
                         {/* 2. КОНТАКТЫ (Рядом с GOPROXY, выравнивание слева) */}
@@ -806,6 +913,18 @@ export default function HomePage() {
 
 
             </footer>
+
+             {/* МОДАЛКА ОПЛАТЫ */}
+            <PaymentModal 
+                isOpen={!!modalData} 
+                onClose={() => setModalData(null)} 
+                data={modalData} 
+                userBalance={balance} 
+                onPayBalance={() => handleModalPayment('balance')} 
+                onPayGateway={() => handleModalPayment('gateway')}
+                isProcessing={isModalProcessing}
+            />
+
         </main>
     );
 }

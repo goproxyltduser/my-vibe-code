@@ -1,4 +1,5 @@
 // src/app/api/checkout/route.js
+
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid'; 
 import { supabase as clientSupabase } from '../../../lib/supabase.js'; 
@@ -16,7 +17,7 @@ export async function POST(req) {
             country = '', 
             amountCents, 
             userId,
-            type = 'order' // 'order' или 'topup'
+            type = 'order' 
         } = await req.json();
 
         if (!userId) {
@@ -25,25 +26,27 @@ export async function POST(req) {
 
         const client_id = uuidv4(); 
 
-        // Собираем метаданные (детали заказа)
+        // 1. СОБИРАЕМ МЕТАДАННЫЕ (ЭТОГО НЕ ХВАТАЛО!)
         const metadata = {
-            quantity: quantity,
-            country: country,
-            period: period,
+            quantity,
+            period,
+            country,
+            // Определяем тип по имени товара (IPv6 или IPv4)
             type: product.name?.toLowerCase().includes('ipv6') ? 'IPv6' : 'IPv4',
-            operation_type: type // запоминаем: это покупка или пополнение
+            operation_type: type
         };
 
+        // 2. СТРУКТУРА ЗАКАЗА
         const orderData = {
             user_id: userId,
             product_name: type === 'topup' ? 'Пополнение баланса' : (product.name || 'Unknown Proxy'), 
             amount_total: amountCents,
             status: 'pending',
-            session_id: client_id,
-            metadata: metadata // <-- СОХРАНЯЕМ ДЕТАЛИ
+            session_id: client_id, 
+            metadata: metadata // <-- ВАЖНО: Записываем детали
         };
 
-        // ВСТАВКА В БД
+        // 3. ВСТАВКА В БД
         const { error: orderError } = await clientSupabase
             .from('orders')
             .insert([orderData]);
@@ -53,8 +56,9 @@ export async function POST(req) {
             return NextResponse.json({ error: 'Ошибка создания заказа' }, { status: 500 });
         }
         
-        // Ссылка на оплату
-        const paymentUrl = `${PAYMENT_DOMAIN}/pay/store/${STORE_UUID}/${client_id}?amount=${amountCents}`;
+        // 4. ССЫЛКА
+        const amountDollars = (amountCents / 100).toFixed(2);
+        const paymentUrl = `${PAYMENT_DOMAIN}/pay/store/${STORE_UUID}/${client_id}?amount=${amountDollars}`;
 
         return NextResponse.json({ url: paymentUrl });
 

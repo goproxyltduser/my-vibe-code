@@ -20,6 +20,12 @@ export default function ProfilePage() {
     const [isProcessing, setIsProcessing] = useState(false);
 
     const router = useRouter();
+     // НОВЫЕ СОСТОЯНИЯ ДЛЯ ПАРОЛЯ
+    const [newPassword, setNewPassword] = useState('');
+    const [passwordStatus, setPasswordStatus] = useState('');
+    const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+
 
     useEffect(() => {
         const getUserData = async () => {
@@ -47,13 +53,15 @@ export default function ProfilePage() {
             if (userOrders) setOrders(userOrders);
 
             // 3. Загружаем КУПЛЕННЫЕ ПРОКСИ (Склад)
+                   // 3. Загружаем КУПЛЕННЫЕ ПРОКСИ (Восстановление)
             const { data: proxies } = await supabase
                 .from('proxy_pool')
                 .select('*')
-                .eq('owner_id', user.id) // Только мои
-                .eq('is_sold', true);    // Только проданные мне
-           
+                .eq('owner_id', user.id) 
+                .eq('is_sold', true);    
+            
             if (proxies) setMyProxies(proxies);
+
 
             setLoading(false);
         };
@@ -89,6 +97,29 @@ export default function ProfilePage() {
     };
 
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]"><div className="text-[#E85D04] font-bold text-xl animate-pulse">Загрузка...</div></div>;
+        // ФУНКЦИЯ СМЕНЫ ПАРОЛЯ
+    const handleUpdatePassword = async () => {
+        if (newPassword.length < 6) {
+            alert("Пароль должен быть не менее 6 символов");
+            return;
+        }
+        setIsPasswordLoading(true);
+        setPasswordStatus('Обновление...');
+        
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+        if (error) {
+            alert("Ошибка: " + error.message);
+            setPasswordStatus('');
+        } else {
+            alert("Пароль успешно установлен!");
+            setPasswordStatus('Пароль сохранен ✅');
+            setNewPassword('');
+        }
+        setIsPasswordLoading(false);
+    };
+
+
 
     // --- Вкладка ПРОФИЛЬ (Статистика) ---
     const TabProfile = () => (
@@ -115,6 +146,33 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </div>
+           {/* БЛОК БЕЗОПАСНОСТИ (СМЕНА ПАРОЛЯ) */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Безопасность</h3>
+                <p className="text-sm text-gray-500 mb-4">Установите постоянный пароль для входа в аккаунт.</p>
+                
+                <div className="flex flex-col md:flex-row gap-4 items-end">
+                    <div className="w-full md:w-1/2">
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Новый пароль</label>
+                        <input 
+                            type="password" 
+                            placeholder="••••••••" 
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-[#E85D04]" 
+                        />
+                    </div>
+                    <button 
+                        onClick={handleUpdatePassword}
+                        disabled={isPasswordLoading}
+                        className="px-6 py-3 bg-black text-white font-bold rounded-lg hover:bg-gray-800 transition shadow-lg disabled:bg-gray-400"
+                    >
+                        {isPasswordLoading ? 'Сохранение...' : 'Сохранить пароль'}
+                    </button>
+                </div>
+                {passwordStatus && <p className="text-green-600 text-sm font-bold mt-3">{passwordStatus}</p>}
+            </div>
+
 
             {/* История последних операций */}
             <h3 className="text-xl font-bold text-gray-900 mb-4">История операций</h3>
@@ -150,48 +208,51 @@ export default function ProfilePage() {
     );
 
     // --- Вкладка МОИ ПРОКСИ (Выдача товара) ---
-    const TabProxies = () => (
+       const TabProxies = () => (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Мои прокси</h2>
-                <button
-                    onClick={() => {
-                        const text = myProxies.map(p => `${p.ip}:${p.port}:${p.login}:${p.password}`).join('\n');
-                        const blob = new Blob([text], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'proxies.txt';
-                        a.click();
-                    }}
-                    className="text-sm font-bold text-[#E85D04] hover:underline"
-                >
-                    Скачать всё (.txt)
-                </button>
+                <h2 className="text-2xl font-bold text-gray-900">Мои прокси ({myProxies.length})</h2>
+                {myProxies.length > 0 && (
+                    <button 
+                        onClick={() => {
+                            const text = myProxies.map(p => `${p.ip}:${p.port}:${p.login}:${p.password}`).join('\n');
+                            const blob = new Blob([text], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'proxies.txt';
+                            a.click();
+                        }}
+                        className="text-sm font-bold text-[#E85D04] hover:underline"
+                    >
+                        Скачать всё (.txt)
+                    </button>
+                )}
             </div>
 
             {myProxies.length === 0 ? (
                 <div className="bg-white p-10 rounded-xl text-center border border-gray-200">
-                    <p className="text-gray-500 mb-4">У вас пока нет активных прокси.</p>
+                    <p className="text-gray-500 mb-4">Активных прокси не найдено.</p>
                     <Link href="/#tariffs" className="inline-block px-6 py-2 bg-[#E85D04] text-white font-bold rounded-lg hover:bg-[#cc5200]">
                         Купить прокси
                     </Link>
                 </div>
             ) : (
                 <div className="space-y-4">
+                    {/* ВАЖНО: Мы перебираем массив myProxies */}
                     {myProxies.map(proxy => (
                         <div key={proxy.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
                             <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-mono font-bold text-lg text-gray-900">{proxy.ip}:{proxy.port}</span>
-                                    <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-500">{proxy.type}</span>
-                                    <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{proxy.country}</span>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span className="font-mono font-bold text-lg text-gray-900 select-all">{proxy.ip}:{proxy.port}</span>
+                                    <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500 font-bold">{proxy.type}</span>
+                                    <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold">{proxy.country}</span>
                                 </div>
-                                <div className="text-sm text-gray-500 font-mono">
-                                    Login: <span className="text-gray-800">{proxy.login}</span> &nbsp;|&nbsp; Pass: <span className="text-gray-800">{proxy.password}</span>
+                                <div className="text-sm text-gray-500 font-mono bg-gray-50 p-2 rounded select-all">
+                                    Login: <span className="text-gray-900">{proxy.login}</span> &nbsp;|&nbsp; Pass: <span className="text-gray-900">{proxy.password}</span>
                                 </div>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right min-w-[120px]">
                                 <div className="text-xs text-gray-400 mb-1">Истекает:</div>
                                 <div className="text-sm font-bold text-gray-700">
                                     {proxy.expires_at ? new Date(proxy.expires_at).toLocaleDateString() : 'Бессрочно'}
@@ -203,6 +264,8 @@ export default function ProfilePage() {
             )}
         </div>
     );
+
+
 
     // --- Вкладка БАЛАНС ---
     const TabBalance = () => (
@@ -310,7 +373,125 @@ export default function ProfilePage() {
 
             {/* CONTENT */}
             <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-                {activeTab === 'profile' && <TabProfile />}
+                                  {/* --- ВКЛАДКА ПРОФИЛЬ (ИСПРАВЛЕННАЯ) --- */}
+                {activeTab === 'profile' && (
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Профиль пользователя</h2>
+                        
+                        {/* КАРТОЧКА С ДАННЫМИ */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-2xl font-bold text-gray-500 border border-gray-200">
+                                    {user.email ? user.email[0].toUpperCase() : 'U'}
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-500">Email</p>
+                                    <p className="text-lg font-bold text-gray-900">{user.email}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                    <p className="text-sm text-gray-500">Куплено IP всего</p>
+                                                                       {/* БЫЛО: orders.length -> СТАЛО: myProxies.length */}
+                                    <p className="text-3xl font-extrabold text-[#E85D04]">{myProxies.length}</p>
+                                </div>
+                                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                    <p className="text-sm text-gray-500">Всего заказов</p>
+                                    {/* Здесь показываем количество заказов */}
+                                    <p className="text-3xl font-extrabold text-gray-900">{orders.length}</p>
+
+
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* БЛОК СМЕНЫ ПАРОЛЯ С ГЛАЗКОМ */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+                            <h3 className="text-lg font-bold text-gray-900 mb-4">Безопасность</h3>
+                            <p className="text-sm text-gray-500 mb-4">Установите постоянный пароль для входа в аккаунт.</p>
+                            
+                            <div className="flex flex-col md:flex-row gap-4 items-end">
+                                <div className="w-full md:w-1/2 relative">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Новый пароль</label>
+                                    <div className="relative">
+                                        <input 
+                                            type={showPassword ? "text" : "password"} 
+                                            placeholder="••••••••" 
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-[#E85D04] pr-10" 
+                                        />
+                                        {/* КНОПКА ГЛАЗ */}
+                                        <button 
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        >
+                                            {showPassword ? (
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                                                </svg>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={handleUpdatePassword}
+                                    disabled={isPasswordLoading}
+                                    className="px-6 py-3 bg-black text-white font-bold rounded-lg hover:bg-gray-800 transition shadow-lg disabled:bg-gray-400"
+                                >
+                                    {isPasswordLoading ? '...' : 'Сохранить'}
+                                </button>
+                            </div>
+                            {passwordStatus && <p className="text-green-600 text-sm font-bold mt-3">{passwordStatus}</p>}
+                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="p-6 border-b border-gray-100">
+                    <h3 className="text-xl font-bold text-gray-900">История операций</h3>
+                </div>
+                {orders.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">История пуста</div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm text-gray-600">
+                            <thead className="bg-gray-50 text-gray-900 font-bold uppercase text-xs">
+                                <tr>
+                                    <th className="px-6 py-3">Операция</th>
+                                    <th className="px-6 py-3">Сумма</th>
+                                    <th className="px-6 py-3">Статус</th>
+                                    <th className="px-6 py-3">Дата</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {orders.map((order) => (
+                                    <tr key={order.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-3 font-medium text-gray-900">{order.product_name || 'Заказ'}</td>
+                                        <td className="px-6 py-3">${(order.amount_total / 100).toFixed(2)}</td>
+                                        <td className="px-6 py-3">
+                                            <span className={`px-2 py-1 rounded text-xs font-bold ${order.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                {order.status === 'paid' ? 'Выполнено' : 'Ожидание'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-3 text-gray-400">{new Date(order.created_at).toLocaleDateString()}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
+                        </div>
+                    </div>
+                )}
+                
+
+
                 {activeTab === 'proxies' && <TabProxies />}
                 {activeTab === 'balance' && <TabBalance />}
             </main>
