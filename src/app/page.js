@@ -520,34 +520,42 @@ export default function HomePage() {
 
             {/* 2. HERO SECTION */}
                                   {/* 2. HERO SECTION */}
-                                          <section className="pt-6 pb-20 px-6 md:px-12 bg-white overflow-hidden">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12 text-center md:text-left">
+                                                                                                              <section className="pt-20 pb-20 px-6 md:px-12 md:pt-10 bg-white overflow-hidden">
+                {/* Убрал 'text-center' из родительского div, теперь везде text-left */}
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12 text-left">
+
+
 
      
                                                                      {/* ЛЕВАЯ КОЛОНКА (ТЕКСТ) */}
                     <div className="w-full md:w-1/2 z-10">
                         <div className="flex flex-col text-left">
                             {/* Заголовок: меньше на мобильном (4xl), большой на ПК (8xl) */}
-                            <h1 className="text-4xl md:text-8xl font-black text-gray-900 tracking-tighter leading-none mb-2">
-                                GOPROXY
+                                                                                     {/* ЗАГОЛОВОК: Крупнее, жирнее, два цвета */}
+                                                       {/* 1. ЗАГОЛОВОК (GOPROXY УБРАН) */}
+                            {/* На мобильном 4xl, на ПК 6xl. Оранжевый только у "ЛЮБЫЕ ЦЕЛИ" */}
+                            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight leading-none mb-6 text-gray-900">
+                                ПРОКСИ ПОД <br className="md:hidden" /> <span className="text-[#E85D04]">ЛЮБЫЕ ЦЕЛИ</span>
                             </h1>
-                            {/* Подзаголовок: меньше на мобильном (2xl), большой на ПК (5xl) */}
-                            <h2 className="text-2xl md:text-5xl font-bold text-[#E85D04] uppercase tracking-tight leading-none mb-4">
-                                ПРОКСИ ПОД ЛЮБЫЕ ЦЕЛИ
-                            </h2>
 
-                            {/* Гарантия: меньше на мобильном (sm), больше на ПК (xl) */}
-                            <p className="text-sm md:text-xl font-bold text-gray-900 mb-6">
-                                Гарантия возврата 48ч. Выдача в одни руки.
+                            {/* 2. ГАРАНТИЯ (Жирный, черный, заглавные) */}
+                            <p className="text-sm md:text-xl font-bold text-gray-900 mb-6 uppercase tracking-wide">
+                                ГАРАНТИЯ ВОЗВРАТА 48Ч. ВЫДАЧА В ОДНИ РУКИ.
                             </p>
                             
+                            {/* 3. ПОДЗАГОЛОВОК (Меньше заголовка: text-lg на моб, text-2xl на ПК) */}
                             <div className="mb-8 md:mb-10">
-                                {/* Слоган: меньше на мобильном (lg), больше на ПК (2xl) */}
-                                <p className="text-lg md:text-2xl text-gray-600 font-medium mb-1 leading-tight">
-                                    Быстрые. Стабильные. Безопасные.
-                                </p>
+                                <p className="text-base md:text-2xl text-gray-600 font-medium mb-1 leading-tight">
+    Быстрые. Стабильные. Безопасные.
+</p>
+
+
                                 <p className="text-xs md:text-sm text-gray-400 font-medium">HTTP/SOCKS5</p>
                             </div>
+
+
+
+
                         </div>
 
                         {/* Кнопка остается как была */}
@@ -839,7 +847,7 @@ export default function HomePage() {
                         <div className="text-left max-w-xs">
                             <div className="text-3xl font-extrabold mb-6 text-[#E85D04] tracking-tighter">GOPROXY</div>
                             <p className="text-gray-400 mb-6 text-sm leading-relaxed">Proxy под любые цели. Быстрые, стабильные и безопасные IPv4 и IPv6 прокси.</p>
-                            <p className="text-gray-600 text-xs">© 2025 GOPROXY LTD. Все права защищены.</p>
+                            <p className="text-gray-600 text-xs">© 2025 INTERNET COMMUNICATION SERVICE LTD. Все права защищены.</p>
                                                           {/* ЛОГОТИП ПЛАТЕЖКИ */}
                             <div className="mt-6">
                                 <Image 
@@ -855,10 +863,12 @@ export default function HomePage() {
                         </div>
 
                         {/* 2. КОНТАКТЫ (Рядом с GOPROXY, выравнивание слева) */}
+                   {/* 2. КОНТАКТЫ */}
                         <div className="text-left">
                             <h4 className="text-sm font-bold mb-8 text-gray-500 uppercase tracking-widest">Контакты</h4>
+                            
+                            {/* Email */}
                             <p className="mb-4 flex items-center gap-3 text-lg font-medium">
-                                                               {/* Иконка Почты */}
                                 <span className="text-[#E85D04]">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
@@ -866,8 +876,9 @@ export default function HomePage() {
                                 </span> 
                                 <a href="mailto:goproxyltd@gmail.com" className="hover:text-white transition text-gray-300">goproxyltd@gmail.com</a>
                             </p>
-                            <p className="flex items-center gap-3 text-lg font-medium">
-                                {/* Иконка Telegram */}
+
+                            {/* Telegram */}
+                            <p className="mb-4 flex items-center gap-3 text-lg font-medium">
                                 <span className="text-[#E85D04]">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
                                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .24z"/>
@@ -876,8 +887,19 @@ export default function HomePage() {
                                 <a href="https://t.me/maxim_hayd" target="_blank" className="hover:text-white transition text-gray-300">Telegram Support</a>
                             </p>
 
-
+                            {/* Телефон (НОВЫЙ) */}
+                            <p className="flex items-center gap-3 text-lg font-medium">
+                                <span className="text-[#E85D04]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                                        <path fillRule="evenodd" d="M1.5 4.5a3 3 0 013-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 01-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 006.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 011.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 01-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 4.5V4.5z" clipRule="evenodd" />
+                                    </svg>
+                                </span> 
+                                <a href="tel:+97441186686" className="hover:text-white transition text-gray-300">+974 4 1186686</a>
+                            </p>
                         </div>
+
+
+
 
                     </div>
 
@@ -902,6 +924,11 @@ export default function HomePage() {
                             <li>
                                 <Link href="/offer" className="hover:text-[#E85D04] transition">
                                     Публичная оферта
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/refund" className="hover:text-[#E85D04] transition">
+                                    Политика возврата
                                 </Link>
                             </li>
                         </ul>

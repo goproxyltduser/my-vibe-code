@@ -1,0 +1,33 @@
+import Link from 'next/link';
+
+export default function TermsPage() {
+    return (
+        <main className="min-h-screen bg-white text-gray-900 font-sans p-6 md:p-20">
+            <div className="max-w-4xl mx-auto">
+                <Link href="/" className="inline-flex items-center gap-2 text-[#E85D04] font-bold mb-10 hover:underline">
+                    ← Вернуться на главную
+                </Link>
+
+                <h1 className="text-4xl md:text-5xl font-black mb-10 uppercase">Политика возврата</h1>
+
+                <div className="space-y-6 text-lg text-gray-700 leading-relaxed">
+                    <p><strong>Условия возврата</strong><br/>
+</p>
+                    
+                    <p><h1>1. В полном объеме осуществляется (исключая условия перечисленные ниже) при условии проверки заказа в первые 48 часа после оплаты.<br/>Настоятельно рекомендуется не игнорировать этот пункт условий.<br/>
+2. IP адрес(а) оказались нерабочие;<br/>
+3. Отсутствие авторизации к IP адресу, с условием что было обращение в поддержку и специалист подтвердил, что проблема будет сохраняться;<br/>
+4. Отсутствие необходимой локации ip в достаточном количестве или под целевую цель использования;<br/>
+5. Ваша выбранная цель использования противоречит условиям нашего сайта.<br/>
+6. На заказы сроком 3 дня возврат не предусмотрен, исключением: полная неработоспособность прокси
+</h1><br/>
+                    </p>
+
+                    
+                    </div>
+                </div>
+            
+        </main>
+    );
+}
+
