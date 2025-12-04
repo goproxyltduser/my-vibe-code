@@ -727,7 +727,7 @@ export default function HomePage() {
                         {/* Тень и скругление для красоты */}
                         <div className="rounded-2xl shadow-2xl border border-gray-200 overflow-hidden bg-gray-50 transform hover:scale-[1.02] transition duration-500">
                             <Image 
-                                src="/dashboard.png" 
+                                src="/dashboard_new.png" 
                                 alt="Личный кабинет GOPROXY" 
                                 width={800} 
                                 height={600} 
