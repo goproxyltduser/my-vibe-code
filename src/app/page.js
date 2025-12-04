@@ -570,7 +570,7 @@ export default function HomePage() {
                                        <div className="hidden md:flex w-full md:w-1/2 relative h-[400px] md:h-[600px] justify-center items-center">
                         {/* Замените /hero.png на имя вашего файла в папке public */}
                         <Image 
-                            src="/hero.png" 
+                            src="/hero_new.png" 
                             alt="Proxy Illustration" 
                             fill 
                             className="object-contain"
