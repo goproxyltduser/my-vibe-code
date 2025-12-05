@@ -1,45 +1,46 @@
-// src/app/api/checkout/route.js (С ПОДДЕРЖКОЙ GUEST CHECKOUT)
+// src/app/api/checkout/route.js
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid'; 
 import { supabase as clientSupabase } from '../../../lib/supabase.js'; 
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto'; // Для подписи Lava
+import crypto from 'crypto'; // Встроена в Node.js, устанавливать не нужно
 
-// Админ-клиент для создания пользователей (Guest Checkout)
+// -- KONFIGURACII --
+
+// Supabase Admin
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-const PAYMENT_DOMAIN = 'https://cloud.dv.net'; 
-const STORE_UUID = 'c90fa863-b9fb-450f-93e0-736df5ed22c2'; // DV.Net ID
+// DV.Net Config
+const DVNET_DOMAIN = 'https://cloud.dv.net'; 
+const DVNET_STORE_ID = 'c90fa863-b9fb-450f-93e0-736df5ed22c2'; 
 
-// Настройки Lava (Возьмите их в кабинете Lava)
+// LAVA.RU Config
 const LAVA_SHOP_ID = process.env.LAVA_SHOP_ID; 
-const LAVA_SECRET_KEY = process.env.LAVA_SECRET_KEY;
-
-
+const LAVA_SECRET_KEY = process.env.LAVA_SECRET_KEY; 
+// ВАЖНО: Если есть ADDITIONAL_KEY, добавьте его тоже, но обычно хватает Secret
 
 export async function POST(req) {
     try {
         const { 
             product = {}, 
-                       quantity = 0, 
+            quantity = 0, 
             period = 0, 
             country = '', 
             amountCents, 
             userId,
-            email, // Email для гостя
+            email, 
             type = 'order',
-            provider = 'dvnet' // 'dvnet' или 'lava'
+            provider = 'dvnet' 
         } = await req.json();
 
         let finalUserId = userId;
 
-        // --- 1. GUEST CHECKOUT (Если нет ID, но есть Email) ---
+        // 1. GUEST CHECKOUT (Авторегистрация)
         if (!finalUserId && email) {
-            // Ищем пользователя
             const { data: existingUser } = await supabaseAdmin
                 .from('profiles')
                 .select('id')
@@ -49,76 +50,103 @@ export async function POST(req) {
             if (existingUser) {
                 finalUserId = existingUser.id;
             } else {
-                // Создаем нового через INVITE (Отправит письмо)
                 const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-                    // Важно: ссылка редиректа в письме
                     redirectTo: `${req.headers.get('origin')}/profile`
                 });
-
-                if (createError) {
-                    console.error('Ошибка создания гостя:', createError);
-                    return NextResponse.json({ error: 'Ошибка регистрации: ' + createError.message }, { status: 400 });
-                }
+                if (createError) return NextResponse.json({ error: 'Ошибка регистрации: ' + createError.message }, { status: 400 });
                 finalUserId = newUser.user.id;
             }
         }
 
-        if (!finalUserId) {
-            return NextResponse.json({ error: 'Пользователь не авторизован' }, { status: 401 });
-        }
+        if (!finalUserId) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 });
 
-        const client_id = uuidv4(); 
-
-        // --- 2. СТРУКТУРА ЗАКАЗА ---
-        const metadata = {
-            quantity, period, country, provider,
-            type: product.name?.toLowerCase().includes('ipv6') ? 'IPv6' : 'IPv4',
-            operation_type: type
-        };
-
+        // 2. СОЗДАЕМ ЗАКАЗ
+        const client_id = uuidv4(); // Наш внутренний ID заказа
+        const metadata = { quantity, period, country, type: product.name?.toLowerCase().includes('ipv6') ? 'IPv6' : 'IPv4', operation_type: type, provider };
+        
         const orderData = {
             user_id: finalUserId,
-            product_name: type === 'topup' ? 'Пополнение баланса' : (product.name || 'Unknown Proxy'), 
+            product_name: type === 'topup' ? 'Пополнение' : (product.name || 'Unknown'), 
             amount_total: amountCents,
             status: 'pending',
             session_id: client_id,
-            metadata: metadata 
+            metadata 
         };
 
-
-
-        // Используем Admin для записи в БД (чтобы обойти RLS для новых юзеров)
         const { error: orderError } = await supabaseAdmin.from('orders').insert([orderData]);
-        if (orderError) return NextResponse.json({ error: 'Ошибка БД: ' + orderError.message }, { status: 500 });
+        if (orderError) return NextResponse.json({ error: 'Ошибка БД' }, { status: 500 });
         
         // 3. ГЕНЕРАЦИЯ ССЫЛКИ
-               let paymentUrl = '';
-        const amountDollars = (amountCents / 100).toFixed(2);
+        let paymentUrl = '';
+        const amount = (amountCents / 100).toFixed(2); // Сумма в основной валюте (USD/RUB)
 
-        if (provider === 'lava') {
-            // --- ЛОГИКА LAVA.RU ---
-            // Пример генерации подписи (Signature)
-            // Вам нужно сверить это с документацией Lava, так как метод может отличаться
-            const dataToSign = JSON.stringify({
-                sum: amountDollars,
+               if (provider === 'lava') {
+            // === LAVA.RU INTEGRATION (С КОНВЕРТАЦИЕЙ) ===
+           
+            if (!LAVA_SHOP_ID || !LAVA_SECRET_KEY) {
+                return NextResponse.json({ error: 'Lava не настроена (нет ключей)' }, { status: 500 });
+            }
+
+            // 1. ПОЛУЧАЕМ КУРС ДОЛЛАРА (ЦБ РФ)
+            let exchangeRate = 100; // Резервный курс на случай сбоя API
+            try {
+                // Используем популярное зеркало ЦБ РФ (JSON)
+                const rateRes = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', { next: { revalidate: 3600 } });
+                if (rateRes.ok) {
+                    const rateData = await rateRes.json();
+                    exchangeRate = rateData.Valute.USD.Value;
+                }
+            } catch (e) {
+                console.error('Ошибка получения курса валют, используем резервный:', exchangeRate);
+            }
+
+            // 2. КОНВЕРТИРУЕМ ЦЕНУ В РУБЛИ
+            // amount у нас сейчас в USD (строка "2.39"). Умножаем на курс.
+            const rubAmountRaw = parseFloat(amount) * exchangeRate;
+            // Округляем до 2 знаков (например, 239.54)
+            const rubAmount = parseFloat(rubAmountRaw.toFixed(2));
+
+            // Данные для подписи (порядок важен!)
+            // Теперь передаем rubAmount вместо amount
+            const signatureData = JSON.stringify({
+                sum: rubAmount, 
                 orderId: client_id,
                 shopId: LAVA_SHOP_ID
             });
-            
-            // const signature = crypto.createHmac('sha256', LAVA_SECRET_KEY).update(dataToSign).digest('hex');
-            
-            // ТЕСТОВАЯ ССЫЛКА (Пока вы не дали API метод Lava, я ставлю заглушку на их главную)
-            // Когда дадите доку - я напишу точный запрос.
-            paymentUrl = `https://lava.ru/invoice?shop=${LAVA_SHOP_ID}&sum=${amountDollars}&order=${client_id}`; 
-        
+
+            // Генерируем подпись HMAC-SHA256
+            const signature = crypto
+                .createHmac('sha256', LAVA_SECRET_KEY)
+                .update(signatureData)
+                .digest('hex');
+
+            // Отправляем запрос в Lava
+            const lavaResponse = await fetch('https://api.lava.ru/business/invoice/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Signature': signature 
+                },
+                body: signatureData 
+            });
+
+            const lavaResult = await lavaResponse.json();
+
+            if (lavaResult.data && lavaResult.data.url) {
+                paymentUrl = lavaResult.data.url;
+            } else {
+                console.error('Lava Error:', lavaResult);
+                return NextResponse.json({ error: 'Ошибка создания инвойса Lava: ' + (lavaResult.error || 'Unknown') }, { status: 400 });
+            }
+
         } else {
-            // --- ЛОГИКА DV.NET (Старая) ---
-            paymentUrl = `${PAYMENT_DOMAIN}/pay/store/${STORE_UUID}/${client_id}?amount=${amountDollars}`;
+
+
+            // === DV.NET (Старая логика) ===
+            paymentUrl = `${DVNET_DOMAIN}/pay/store/${DVNET_STORE_ID}/${client_id}?amount=${amount}`;
         }
 
         return NextResponse.json({ url: paymentUrl });
-
-
 
     } catch (error) {
         console.error('API Error:', error);

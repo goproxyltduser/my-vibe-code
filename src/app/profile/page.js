@@ -27,7 +27,7 @@ export default function ProfilePage() {
     const [showPassword, setShowPassword] = useState(false);
 
 
-    useEffect(() => {
+       useEffect(() => {
         const getUserData = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
@@ -44,29 +44,67 @@ export default function ProfilePage() {
                 .single();
             if (profile) setBalance(profile.balance || 0);
 
-            // 2. Загружаем ИСТОРИЮ ЗАКАЗОВ
+            // 2. Загружаем ИСТОРИЮ ЗАКАЗОВ (Здесь мы объявляем userOrders)
             const { data: userOrders } = await supabase
                 .from('orders')
                 .select('*')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
-            if (userOrders) setOrders(userOrders);
 
-            // 3. Загружаем КУПЛЕННЫЕ ПРОКСИ (Склад)
-                   // 3. Загружаем КУПЛЕННЫЕ ПРОКСИ (Восстановление)
-            const { data: proxies } = await supabase
-                .from('proxy_pool')
-                .select('*')
-                .eq('owner_id', user.id) 
-                .eq('is_sold', true);    
-            
-            if (proxies) setMyProxies(proxies);
+            // Если заказы загрузились — сохраняем их и ищем в них прокси
+            if (userOrders) {
+                setOrders(userOrders);
 
+                // 3. ЗАГРУЖАЕМ ПРОКСИ ИЗ ЭТИХ ЗАКАЗОВ (Вместо старого склада)
+                               // 3. УНИВЕРСАЛЬНЫЙ СБОРЩИК ПРОКСИ
+                               // 3. ЗАГРУЖАЕМ ПРОКСИ (Адаптировано под ответ друга)
+                let allProxies = [];
+                userOrders.forEach(order => {
+                    if (order.status === 'paid' && order.proxy_data) {
+                        const raw = order.proxy_data;
+                        
+                        // Если это одиночный объект (твой случай сейчас)
+                        if (raw.proxy_host) {
+                            allProxies.push({
+                                id: order.id,
+                                ip: raw.proxy_host,         // Мапим proxy_host -> ip
+                                port: raw.proxy_port,       // Мапим proxy_port -> port
+                                login: raw.username,        // Мапим username -> login
+                                password: raw.password,
+                                type: raw.proxy_type,
+                                country: order.metadata?.country || 'RU',
+                                expires_at: raw.expires_at
+                            });
+                        }
+                        // Если это массив (на случай если друг вернет много прокси)
+                        else if (Array.isArray(raw)) {
+                            raw.forEach(p => {
+                                allProxies.push({
+                                    id: p.id || Math.random(), // Временный ID
+                                    ip: p.proxy_host || p.ip,
+                                    port: p.proxy_port || p.port,
+                                    login: p.username || p.login,
+                                    password: p.password,
+                                    type: p.proxy_type || 'http',
+                                    country: order.metadata?.country || 'RU'
+                                });
+                            });
+                        }
+                    }
+                });
+                setMyProxies(allProxies);
+
+
+
+
+            }
 
             setLoading(false);
         };
         getUserData();
     }, [router]);
+
+
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();

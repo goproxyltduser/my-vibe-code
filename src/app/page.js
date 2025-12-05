@@ -202,7 +202,7 @@ const PricingCard = ({ product, currentSession, router, userBalance }) => {
     const [quantity, setQuantity] = useState(minQty);
     const [period, setPeriod] = useState(1);
     const [calculations, setCalculations] = useState({ total: '0.00', saved: '0.00', discount: 0 });
-    const [country, setCountry] = useState('Россия');
+    const [country, setCountry] = useState('ru');
     
     // Нам больше не нужны состояния isProcessing и showPaymentChoice для редиректа
 
@@ -263,12 +263,15 @@ const PricingCard = ({ product, currentSession, router, userBalance }) => {
             <div className="space-y-5 mb-8">
                 <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Страна</label>
-                    <select value={country} onChange={(e) => setCountry(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-black focus:ring-0 outline-none text-gray-800 font-medium cursor-pointer">
-                        <option value="Россия">🇷🇺 Россия</option>
-                        <option value="США">🇺🇸 США</option>
-                        <option value="Франция">🇫🇷 Франция</option>
-                        <option value="Швейцария">🇨🇭 Швейцария</option>
+                                       <select value={country} onChange={(e) => setCountry(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-black focus:ring-0 outline-none text-gray-800 font-medium cursor-pointer">
+                        <option value="ru">🇷🇺 Россия</option>
+                        <option value="kz">🇰🇿 Казахстан</option>
+                        <option value="us">🇺🇸 США</option>
+                        <option value="fr">🇫🇷 Франция</option>
+                        <option value="ch">🇨🇭 Швейцария</option>
                     </select>
+
+
                 </div>
                 <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Количество (Мин. {minQty})</label>
@@ -329,6 +332,60 @@ const PricingCard = ({ product, currentSession, router, userBalance }) => {
 
 
 export default function HomePage() {
+                  // НОВЫЕ СОСТОЯНИЯ
+    const [modalData, setModalData] = useState(null);
+    const [isModalProcessing, setIsModalProcessing] = useState(false);
+
+    // ОТКРЫТИЕ ОКНА (Вместо редиректа)
+    const openModal = (product, qty, amountCents) => {
+        // Если нет сессии, переходим на чекаут для гостя (Guest Checkout)
+        if (!session?.user) {
+             const params = new URLSearchParams({
+                id: product.id, name: product.name, price: amountCents,
+                qty, period: 1, country: 'Россия'
+            });
+            router.push(`/checkout?${params.toString()}`);
+            return;
+        }
+        // Если вошел - открываем модалку
+        setModalData({ product, qty, amountCents, productName: product.name });
+    };
+
+    // ОПЛАТА ИЗ ОКНА
+    const handleModalPayment = async (method) => {
+        setIsModalProcessing(true);
+        const isBalance = method === 'balance';
+        const endpoint = isBalance ? '/api/purchase' : '/api/checkout';
+        const provider = isBalance ? null : method; // 'dvnet' или 'lava'
+
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: session.user.id,
+                    product: { name: modalData.product.name, id: modalData.product.id },
+                    quantity: modalData.qty, period: 1, country: 'Россия', 
+                    amountCents: modalData.amountCents,
+                    provider: provider // Передаем провайдера
+                })
+            });
+            const data = await res.json();
+            if (isBalance && data.success) {
+                window.location.href = '/profile';
+            } else if (data.url) {
+                window.location.assign(data.url);
+            } else {
+                alert(data.error);
+            }
+        } catch (e) { alert('Ошибка'); }
+        finally { setIsModalProcessing(false); setModalData(null); }
+    };
+
+
+
+
+
     const [products, setProducts] = useState([]);
     const [session, setSession] = useState(null); 
     const [loading, setLoading] = useState(false);
@@ -408,89 +465,66 @@ export default function HomePage() {
         fetchProducts();
     }, []);
    // 1. ОТКРЫТИЕ МОДАЛКИ (Вызывается при клике на "Купить" в пакете)
+    // 1. ОТКРЫТИЕ МОДАЛКИ (Вызывается при клике на "Купить" в пакете)
     const openPackageModal = (product, qty, amountCents) => {
+        // ИСПРАВЛЕНО: Если нет сессии, отправляем на Checkout как гостя
         if (!session?.user) {
-            router.push('/login');
+            const params = new URLSearchParams({
+                id: product.id,
+                name: product.name,
+                price: amountCents,
+                qty: qty,
+                period: 1, // Пакеты всегда по умолчанию на 1 месяц
+                country: 'Россия' // Дефолтная страна для пакетов
+            });
+            router.push(`/checkout?${params.toString()}`);
             return;
         }
-        setModalData({ 
-            product, 
-            qty, 
-            amountCents, 
-            productName: product.name 
+
+        // Если авторизован — открываем модалку оплаты балансом/шлюзом
+        setModalData({
+            product,
+            qty,
+            amountCents,
+            productName: product.name
         });
     };
 
-    // 2. ОБРАБОТКА ОПЛАТЫ ИЗ МОДАЛКИ
-    // methodOrProvider может быть: 'balance', 'dvnet' или 'lava'
-    const handleModalPayment = async (methodOrProvider) => {
-        setIsModalProcessing(true);
-        
-        // Если передали 'balance', то идем на API списания. Иначе - на API создания ссылки.
-        const isBalance = methodOrProvider === 'balance';
-        const endpoint = isBalance ? '/api/purchase' : '/api/checkout';
-        
-        // Если это не баланс, значит это имя провайдера (dvnet/lava)
-        const provider = isBalance ? null : methodOrProvider;
 
-        try {
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: session.user.id,
-                    product: { name: modalData.product.name, id: modalData.product.id },
-                    quantity: modalData.qty, 
-                    period: 1, 
-                    country: 'Россия', 
-                    amountCents: modalData.amountCents,
-                    provider: provider // <-- ВАЖНО: Передаем 'lava' или 'dvnet'
-                })
-            });
-            const data = await res.json();
-
-            if (isBalance && data.success) {
-                alert('Успешно куплено!');
-                setModalData(null); // Закрываем окно
-                window.location.href = '/profile';
-            } else if (res.ok && data.url) {
-                window.location.assign(data.url); // Редирект на оплату
-            } else {
-                alert(`Ошибка: ${data.error}`);
-            }
-        } catch (e) { 
-            alert('Ошибка сети'); 
-        } finally { 
-            setIsModalProcessing(false); 
-        }
-    };
+    
 
 
-          const handlePackageBuy = (product, qty) => {
-        // 1. Считаем цену, чтобы передать в URL
+             // ЛОГИКА ПОКУПКИ ПАКЕТА (РЕДИРЕКТ НА CHECKOUT)
+    const handlePackageBuy = (product, qty) => {
+        // 1. Считаем скидку и сумму (чтобы передать правильную цену)
         const isIPv6 = product.name.toLowerCase().includes('ipv6');
         let discount = 0;
+        
         if (isIPv6) {
             discount = Math.min(Math.floor(qty / 50) * 5, 40);
         } else {
             discount = Math.min(Math.floor(qty / 5) * 5, 40);
         }
+        
         const discountedPricePerUnit = product.price_per_unit * ((100 - discount) / 100);
         const total = discountedPricePerUnit * qty;
         const amountCents = Math.round(total);
 
-        // 2. Перенаправляем на страницу оформления (/checkout)
+        // 2. Формируем параметры для URL
         const params = new URLSearchParams({
             id: product.id,
             name: product.name,
             price: amountCents,
             qty: qty,
-            period: 1, // Для пакетов всегда 1 месяц
-            country: 'Россия'
+            period: 1, // Пакеты обычно на 1 месяц
+            country: 'Россия' // Можно добавить выбор страны в виджет позже, пока ставим дефолт
         });
         
+        // 3. Переходим на страницу оформления (Guest Checkout работает там)
         router.push(`/checkout?${params.toString()}`);
     };
+
+
 
 
 
