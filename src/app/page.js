@@ -86,78 +86,36 @@ const AccordionItem = ({ title, text, isOpen, onClick }) => (
 // === МОДАЛЬНОЕ ОКНО С ВЫБОРОМ ПЛАТЕЖКИ (ОБНОВЛЕННОЕ) ===
 const PaymentModal = ({ isOpen, onClose, data, userBalance, onPayBalance, onPayGateway, isProcessing }) => {
     if (!isOpen || !data) return null;
-
-    const canPayWithBalance = userBalance >= data.amountCents;
-    const priceDollars = (data.amountCents / 100).toFixed(2);
-    const balanceDollars = (userBalance / 100).toFixed(2);
+    const canPay = userBalance >= data.amountCents;
+    const price = (data.amountCents / 100).toFixed(2);
+    const bal = (userBalance / 100).toFixed(2);
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
-                
-                <div className="bg-gray-50 p-6 border-b border-gray-100 text-center">
-                    <h3 className="text-xl font-black text-gray-900 uppercase">Оплата заказа</h3>
-                    <p className="text-gray-500 text-sm mt-1">{data.productName}</p>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-black">✕</button>
+                <div className="bg-gray-50 p-6 text-center border-b">
+                    <h3 className="text-xl font-black text-gray-900">ОПЛАТА</h3>
+                    <p className="text-sm text-gray-500">{data.productName}</p>
                 </div>
-
-                <div className="p-6 space-y-4">
-                    <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Количество:</span>
-                        <span className="font-bold text-gray-900">{data.qty} шт.</span>
-                    </div>
-                    <div className="flex justify-between text-lg">
-                        <span className="font-bold text-gray-800">К оплате:</span>
-                        <span className="font-extrabold text-[#E85D04]">${priceDollars}</span>
-                    </div>
+                <div className="p-6 space-y-3">
+                    <div className="flex justify-between font-bold text-lg"><span>К оплате:</span><span className="text-[#E85D04]">${price}</span></div>
+                    <div className={`p-2 rounded text-sm text-center border ${canPay ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>Баланс: ${bal}</div>
                     
-                    <div className={`p-3 rounded-lg text-sm text-center border ${canPayWithBalance ? 'bg-green-50 border-green-100 text-green-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
-                        Ваш баланс: <strong>${balanceDollars}</strong>
-                    </div>
-                </div>
-
-                <div className="p-6 pt-0 flex flex-col gap-3">
-                    {/* 1. ОПЛАТА С БАЛАНСА */}
-                    {canPayWithBalance && (
-                        <button 
-                            onClick={onPayBalance} 
-                            disabled={isProcessing}
-                            className="w-full py-3 bg-[#E85D04] text-white font-bold rounded-xl hover:bg-[#cc5200] transition shadow-lg"
-                        >
-                            {isProcessing ? 'Обработка...' : 'Списать с баланса'}
-                        </button>
-                    )}
+                    {canPay && <button onClick={onPayBalance} disabled={isProcessing} className="w-full py-3 bg-[#E85D04] text-white font-bold rounded-xl hover:bg-[#cc5200]">{isProcessing ? '...' : 'Списать с баланса'}</button>}
                     
-                    <div className="relative flex py-2 items-center">
-                        <div className="flex-grow border-t border-gray-200"></div>
-                        <span className="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase">Или выберите способ</span>
-                        <div className="flex-grow border-t border-gray-200"></div>
-                    </div>
-
-                    {/* 2. DV.NET */}
-                    <button 
-                        onClick={() => onPayGateway('dvnet')}
-                        disabled={isProcessing}
-                        className="w-full py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition shadow-lg flex justify-between px-6 items-center"
-                    >
-                        <span>DV.Net</span>
-                        <span className="text-xs font-normal opacity-70">Карты / Крипта</span>
-                    </button>
-
-                    {/* 3. LAVA.RU (НОВАЯ КНОПКА) */}
-                    <button 
-                        onClick={() => onPayGateway('lava')}
-                        disabled={isProcessing}
-                        className="w-full py-3 bg-[#702cf9] text-white font-bold rounded-xl hover:bg-[#5b23cc] transition shadow-lg flex justify-between px-6 items-center"
-                    >
-                        <span>Lava.ru</span>
-                        <span className="text-xs font-normal opacity-70">RUB / Карты / Qiwi</span>
-                    </button>
+                    <div className="text-center text-xs text-gray-400 uppercase my-2">- ИЛИ -</div>
+                    
+                    {/* КНОПКИ ПЛАТЕЖЕК */}
+                    <button onClick={() => onPayGateway('dvnet')} disabled={isProcessing} className="w-full py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 flex justify-between px-4"><span>DV.Net</span><span className="opacity-50 text-xs font-normal">Карты / Крипта</span></button>
+                    <button onClick={() => onPayGateway('lava')} disabled={isProcessing} className="w-full py-3 bg-[#702cf9] text-white font-bold rounded-xl hover:bg-[#5b23cc] flex justify-between px-4"><span>Lava.ru</span><span className="opacity-50 text-xs font-normal">RUB / Qiwi</span></button>
                 </div>
             </div>
         </div>
     );
 };
+
+
 
 
 
@@ -374,11 +332,45 @@ export default function HomePage() {
     const [products, setProducts] = useState([]);
     const [session, setSession] = useState(null); 
     const [loading, setLoading] = useState(false);
+       // --- СОСТОЯНИЯ ДЛЯ МОДАЛЬНОГО ОКНА ОПЛАТЫ ---
+    const PaymentModal = ({ isOpen, onClose, data, userBalance, onPayBalance, onPayGateway, isProcessing }) => {
+    if (!isOpen || !data) return null;
+    const canPay = userBalance >= data.amountCents;
+    const price = (data.amountCents / 100).toFixed(2);
+    const bal = (userBalance / 100).toFixed(2);
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden relative">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-black">✕</button>
+                <div className="bg-gray-50 p-6 text-center border-b">
+                    <h3 className="text-xl font-black text-gray-900">ОПЛАТА</h3>
+                    <p className="text-sm text-gray-500">{data.productName}</p>
+                </div>
+                <div className="p-6 space-y-3">
+                    <div className="flex justify-between font-bold text-lg"><span>К оплате:</span><span className="text-[#E85D04]">${price}</span></div>
+                    <div className={`p-2 rounded text-sm text-center border ${canPay ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>Баланс: ${bal}</div>
+                    
+                    {canPay && <button onClick={onPayBalance} disabled={isProcessing} className="w-full py-3 bg-[#E85D04] text-white font-bold rounded-xl hover:bg-[#cc5200]">{isProcessing ? '...' : 'Списать с баланса'}</button>}
+                    
+                    <div className="text-center text-xs text-gray-400 uppercase my-2">- ИЛИ -</div>
+                    
+                    {/* КНОПКИ ПЛАТЕЖЕК */}
+                    <button onClick={() => onPayGateway('dvnet')} disabled={isProcessing} className="w-full py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 flex justify-between px-4"><span>DV.Net</span><span className="opacity-50 text-xs font-normal">Карты / Крипта</span></button>
+                    <button onClick={() => onPayGateway('lava')} disabled={isProcessing} className="w-full py-3 bg-[#702cf9] text-white font-bold rounded-xl hover:bg-[#5b23cc] flex justify-between px-4"><span>Lava.ru</span><span className="opacity-50 text-xs font-normal">RUB / Qiwi</span></button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+
+
     const [openUseCase, setOpenUseCase] = useState(null); 
     const [openFaq, setOpenFaq] = useState(null); 
       const [balance, setBalance] = useState(0); // Баланс пользователя
-    const [modalData, setModalData] = useState(null); // Данные для модалки
-    const [isModalProcessing, setIsModalProcessing] = useState(false); // Загрузка модалки
+    
 
     // НОВОЕ СОСТОЯНИЕ ДЛЯ МОБИЛЬНОГО МЕНЮ
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
@@ -415,6 +407,64 @@ export default function HomePage() {
         };
         fetchProducts();
     }, []);
+   // 1. ОТКРЫТИЕ МОДАЛКИ (Вызывается при клике на "Купить" в пакете)
+    const openPackageModal = (product, qty, amountCents) => {
+        if (!session?.user) {
+            router.push('/login');
+            return;
+        }
+        setModalData({ 
+            product, 
+            qty, 
+            amountCents, 
+            productName: product.name 
+        });
+    };
+
+    // 2. ОБРАБОТКА ОПЛАТЫ ИЗ МОДАЛКИ
+    // methodOrProvider может быть: 'balance', 'dvnet' или 'lava'
+    const handleModalPayment = async (methodOrProvider) => {
+        setIsModalProcessing(true);
+        
+        // Если передали 'balance', то идем на API списания. Иначе - на API создания ссылки.
+        const isBalance = methodOrProvider === 'balance';
+        const endpoint = isBalance ? '/api/purchase' : '/api/checkout';
+        
+        // Если это не баланс, значит это имя провайдера (dvnet/lava)
+        const provider = isBalance ? null : methodOrProvider;
+
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: session.user.id,
+                    product: { name: modalData.product.name, id: modalData.product.id },
+                    quantity: modalData.qty, 
+                    period: 1, 
+                    country: 'Россия', 
+                    amountCents: modalData.amountCents,
+                    provider: provider // <-- ВАЖНО: Передаем 'lava' или 'dvnet'
+                })
+            });
+            const data = await res.json();
+
+            if (isBalance && data.success) {
+                alert('Успешно куплено!');
+                setModalData(null); // Закрываем окно
+                window.location.href = '/profile';
+            } else if (res.ok && data.url) {
+                window.location.assign(data.url); // Редирект на оплату
+            } else {
+                alert(`Ошибка: ${data.error}`);
+            }
+        } catch (e) { 
+            alert('Ошибка сети'); 
+        } finally { 
+            setIsModalProcessing(false); 
+        }
+    };
+
 
           const handlePackageBuy = (product, qty) => {
         // 1. Считаем цену, чтобы передать в URL
@@ -611,22 +661,36 @@ export default function HomePage() {
                         
                         <div className="flex flex-col md:flex-row gap-8 justify-center items-start">
                             {/* IPv4 Packages Widget */}
+                                                       {/* IPv4 */}
                             {products.find(p => !p.name.toLowerCase().includes('ipv6')) && (
                                 <PackageWidget 
                                     product={products.find(p => !p.name.toLowerCase().includes('ipv6'))}
                                     quantities={[10, 20, 50, 100]}
-                                    handleBuy={handlePackageBuy}
+                                    // ИЗМЕНЕНО: Вызываем открытие модалки с расчетом цены
+                                    handleBuy={(prod, qty) => {
+                                        // Расчет цены (упрощенный, тот же что и в виджете)
+                                        const discount = Math.min(Math.floor(qty / 5) * 5, 40);
+                                        const price = prod.price_per_unit * ((100 - discount) / 100) * qty;
+                                        openPackageModal(prod, qty, Math.round(price));
+                                    }}
                                 />
                             )}
 
-                            {/* IPv6 Packages Widget */}
+                            {/* IPv6 */}
                             {products.find(p => p.name.toLowerCase().includes('ipv6')) && (
                                 <PackageWidget 
                                     product={products.find(p => p.name.toLowerCase().includes('ipv6'))}
                                     quantities={[100, 250, 500, 1000]}
-                                    handleBuy={handlePackageBuy}
+                                    // ИЗМЕНЕНО:
+                                    handleBuy={(prod, qty) => {
+                                        const discount = Math.min(Math.floor(qty / 50) * 5, 40);
+                                        const price = prod.price_per_unit * ((100 - discount) / 100) * qty;
+                                        openPackageModal(prod, qty, Math.round(price));
+                                    }}
                                 />
                             )}
+
+
                         </div>
                     </div>
 
@@ -942,15 +1006,17 @@ export default function HomePage() {
             </footer>
 
              {/* МОДАЛКА ОПЛАТЫ */}
-            <PaymentModal 
+                       <PaymentModal 
                 isOpen={!!modalData} 
                 onClose={() => setModalData(null)} 
                 data={modalData} 
                 userBalance={balance} 
                 onPayBalance={() => handleModalPayment('balance')} 
-                onPayGateway={() => handleModalPayment('gateway')}
+                onPayGateway={(provider) => handleModalPayment(provider)} 
                 isProcessing={isModalProcessing}
             />
+
+
 
         </main>
     );
