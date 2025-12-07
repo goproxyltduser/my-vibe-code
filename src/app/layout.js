@@ -1,5 +1,5 @@
 // src/app/layout.js
-import './globals.css';
+import "./globals.css";
 
 export const metadata = {
   title: "GOPROXY | Прокси под любые цели", // Текст на вкладке
