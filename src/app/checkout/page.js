@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 export default function CheckoutPage() {
     return (
-        <Suspense fallback={<div>Загрузка...</div>}>
+        <Suspense fallback={<div>goproxy</div>}>
             <CheckoutContent />
         </Suspense>
     );
@@ -103,13 +103,13 @@ function CheckoutContent() {
                 <div className="bg-gray-50 p-4 rounded-xl mb-6 space-y-2 text-sm">
                     <div className="flex justify-between"><span className="text-gray-500">Товар:</span><span className="font-bold">{productName}</span></div>
                     <div className="flex justify-between"><span className="text-gray-500">Детали:</span><span>{quantity} шт. / {country} / {period} мес.</span></div>
-                    <div className="flex justify-between pt-2 border-t border-gray-200 text-lg"><span className="font-bold">К оплате:</span><span className="font-black text-[#E85D04]">${(priceCents / 100).toFixed(2)}</span></div>
+                    <div className="flex justify-between pt-2 border-t border-gray-200 text-lg"><span className="font-bold">К оплате:</span><span className="font-black text-[#000000]">${(priceCents / 100).toFixed(2)}</span></div>
                 </div>
 
                 <div className="mb-6">
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">Email</label>
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={!!user} placeholder="mail@example.com" className="w-full p-4 bg-white border border-gray-200 rounded-xl focus:border-[#E85D04] outline-none transition" />
-                    {!user && <p className="text-xs text-gray-400 mt-2 ml-1">Аккаунт будет создан автоматически.</p>}
+                    {!user && <p className="text-xs text-gray-400 mt-2 ml-1">Аккаунт будет создан автоматически, доступ придет на email.</p>}
                 </div>
 
                 {/* ВЫБОР СПОСОБА ОПЛАТЫ */}
@@ -121,7 +121,7 @@ function CheckoutContent() {
                         onClick={() => { setPaymentMethod('gateway'); setPaymentProvider('dvnet'); }}
                         className={`w-full p-4 rounded-xl border-2 flex justify-between items-center transition ${paymentProvider === 'dvnet' && paymentMethod === 'gateway' ? 'border-[#E85D04] bg-orange-50/50' : 'border-gray-100 hover:border-gray-300'}`}
                     >
-                        <span className="font-bold">DV.Net (Карта / Крипта)</span>
+                        <span className="font-bold">DV.Net (crypto)</span>
                         {paymentProvider === 'dvnet' && paymentMethod === 'gateway' && <span className="text-[#E85D04]">✔</span>}
                     </button>
 
@@ -130,7 +130,7 @@ function CheckoutContent() {
                         onClick={() => { setPaymentMethod('gateway'); setPaymentProvider('lava'); }}
                         className={`w-full p-4 rounded-xl border-2 flex justify-between items-center transition ${paymentProvider === 'lava' && paymentMethod === 'gateway' ? 'border-[#702cf9] bg-purple-50' : 'border-gray-100 hover:border-gray-300'}`}
                     >
-                        <span className="font-bold">Lava.ru (RUB / Qiwi)</span>
+                        <span className="font-bold">Lava.ru (wallet)</span>
                         {paymentProvider === 'lava' && paymentMethod === 'gateway' && <span className="text-[#702cf9]">✔</span>}
                     </button>
 

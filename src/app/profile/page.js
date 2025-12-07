@@ -134,7 +134,7 @@ export default function ProfilePage() {
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]"><div className="text-[#E85D04] font-bold text-xl animate-pulse">Загрузка...</div></div>;
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]"><div className="text-[#E85D04] font-bold text-xl animate-pulse">goproxy</div></div>;
         // ФУНКЦИЯ СМЕНЫ ПАРОЛЯ
     const handleUpdatePassword = async () => {
         if (newPassword.length < 6) {
