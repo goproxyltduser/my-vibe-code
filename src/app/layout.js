@@ -1,21 +1,19 @@
 // src/app/layout.js
-import "./globals.css";
+import './globals.css';
 
 export const metadata = {
-  title: "GOPROXY | Прокси под любые цели", // Текст на вкладке
-  description: "Купить быстрые и анонимные IPv4 и IPv6 прокси. Выдача в одни руки, высокая скорость.", // Текст для Google/Yandex
-  icons: {
-    icon: '/icon.png', // Указываем путь к иконке (см. шаг 2)
-  },
+  title: 'ProxyVibe Service',
+  description: 'Аренда надежных прокси',
 };
 
 export default function RootLayout({ children }) {
-  // ... остальной код (html, body) не трогай
   return (
     <html lang="ru">
-      <body>{children}</body>
+      {/* Применяем шрифт и фон ко всему телу документа */}
+      <body className="font-sans bg-background text-text antialiased">
+        {children}
+      </body>
     </html>
   );
 }
-
 
