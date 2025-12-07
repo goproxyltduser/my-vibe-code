@@ -1,4 +1,5 @@
 // src/app/layout.js
+import './globals.css';
 
 export const metadata = {
   title: "GOPROXY | Прокси под любые цели", // Текст на вкладке
@@ -16,4 +17,5 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+
 
