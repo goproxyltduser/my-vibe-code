@@ -111,7 +111,7 @@ export default function ProfilePage() {
         window.location.href = '/';
     };
 
-    const handleTopUp = async () => {
+       const handleTopUp = async () => {
         if (!topupAmount || Number(topupAmount) <= 0) {
             alert("Введите корректную сумму.");
             return;
@@ -125,14 +125,40 @@ export default function ProfilePage() {
                 body: JSON.stringify({ userId: user.id, amountCents, type: 'topup' }),
             });
             const data = await response.json();
-            if (response.ok) window.location.assign(data.url);
-            else alert(`Ошибка: ${data.error}`);
+
+            // --- НАЧАЛО ИЗМЕНЕНИЙ ---
+            if (response.ok) {
+                // 1. Отправляем данные в Метрику
+                if (typeof window !== 'undefined' && window.dataLayer) {
+                    window.dataLayer.push({
+                        "ecommerce": {
+                            "add": {
+                                "products": [{
+                                    "id": "balance_topup",
+                                    "name": "Пополнение баланса",
+                                    "price": parseFloat(topupAmount),
+                                    "quantity": 1
+                                }]
+                            }
+                        }
+                    });
+                }
+
+                // 2. Переходим на оплату
+                window.location.assign(data.url);
+            } else {
+                alert(`Ошибка: ${data.error}`);
+            }
+            // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+
         } catch (error) {
             alert('Ошибка сети.');
         } finally {
             setIsProcessing(false);
         }
     };
+
+
 
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]"><div className="text-[#E85D04] font-bold text-xl animate-pulse">goproxy</div></div>;
         // ФУНКЦИЯ СМЕНЫ ПАРОЛЯ

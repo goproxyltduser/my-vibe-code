@@ -1,9 +1,8 @@
 // src/app/api/checkout/route.js
 import { NextResponse } from 'next/server';
-import { v4 as uuidv4 } from 'uuid'; 
-import { supabase as clientSupabase } from '../../../lib/supabase.js'; 
+import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto'; // Встроена в Node.js, устанавливать не нужно
+import crypto from 'crypto';
 
 // -- KONFIGURACII --
 
@@ -15,26 +14,25 @@ const supabaseAdmin = createClient(
 );
 
 // DV.Net Config
-const DVNET_DOMAIN = 'https://cloud.dv.net'; 
-const DVNET_STORE_ID = 'c90fa863-b9fb-450f-93e0-736df5ed22c2'; 
+const DVNET_DOMAIN = 'https://cloud.dv.net';
+const DVNET_STORE_ID = 'c90fa863-b9fb-450f-93e0-736df5ed22c2';
 
 // LAVA.RU Config
-const LAVA_SHOP_ID = process.env.LAVA_SHOP_ID; 
-const LAVA_SECRET_KEY = process.env.LAVA_SECRET_KEY; 
-// ВАЖНО: Если есть ADDITIONAL_KEY, добавьте его тоже, но обычно хватает Secret
+const LAVA_SHOP_ID = process.env.LAVA_SHOP_ID;
+const LAVA_SECRET_KEY = process.env.LAVA_SECRET_KEY;
 
 export async function POST(req) {
     try {
-        const { 
-            product = {}, 
-            quantity = 0, 
-            period = 0, 
-            country = '', 
-            amountCents, 
+        const {
+            product = {},
+            quantity = 0,
+            period = 0,
+            country = '',
+            amountCents,
             userId,
-            email, 
+            email,
             type = 'order',
-            provider = 'dvnet' 
+            provider = 'dvnet'
         } = await req.json();
 
         let finalUserId = userId;
@@ -63,24 +61,33 @@ export async function POST(req) {
         // 2. СОЗДАЕМ ЗАКАЗ
         const client_id = uuidv4(); // Наш внутренний ID заказа
         const metadata = { quantity, period, country, type: product.name?.toLowerCase().includes('ipv6') ? 'IPv6' : 'IPv4', operation_type: type, provider };
-        
+       
         const orderData = {
             user_id: finalUserId,
-            product_name: type === 'topup' ? 'Пополнение' : (product.name || 'Unknown'), 
+            product_name: type === 'topup' ? 'Пополнение' : (product.name || 'Unknown'),
             amount_total: amountCents,
             status: 'pending',
             session_id: client_id,
-            metadata 
+            metadata
         };
 
         const { error: orderError } = await supabaseAdmin.from('orders').insert([orderData]);
         if (orderError) return NextResponse.json({ error: 'Ошибка БД' }, { status: 500 });
-        
+       
         // 3. ГЕНЕРАЦИЯ ССЫЛКИ
         let paymentUrl = '';
-        const amount = (amountCents / 100).toFixed(2); // Сумма в основной валюте (USD/RUB)
+        const amount = (amountCents / 100).toFixed(2); // Сумма в USD (строка)
 
-               if (provider === 'lava') {
+        // --- НОВАЯ ЛОГИКА: Формируем Success URL для Метрики ---
+        // Определяем тип и имя для статистики
+        const metricType = type === 'topup' ? 'balance' : 'proxy';
+        const metricName = type === 'topup' ? 'Пополнение баланса' : (product.name || 'Proxy Purchase');
+        
+        // Ссылка, куда вернуть юзера после оплаты (передаем сумму и детали)
+        const successUrl = `https://goproxy.tech/success?amount=${amount}&type=${metricType}&product=${encodeURIComponent(metricName)}&order_id=${client_id}`;
+        const failUrl = `https://goproxy.tech/profile`; 
+
+        if (provider === 'lava') {
             // === LAVA.RU INTEGRATION (С КОНВЕРТАЦИЕЙ) ===
            
             if (!LAVA_SHOP_ID || !LAVA_SECRET_KEY) {
@@ -88,9 +95,8 @@ export async function POST(req) {
             }
 
             // 1. ПОЛУЧАЕМ КУРС ДОЛЛАРА (ЦБ РФ)
-            let exchangeRate = 100; // Резервный курс на случай сбоя API
+            let exchangeRate = 100;
             try {
-                // Используем популярное зеркало ЦБ РФ (JSON)
                 const rateRes = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', { next: { revalidate: 3600 } });
                 if (rateRes.ok) {
                     const rateData = await rateRes.json();
@@ -101,18 +107,19 @@ export async function POST(req) {
             }
 
             // 2. КОНВЕРТИРУЕМ ЦЕНУ В РУБЛИ
-            // amount у нас сейчас в USD (строка "2.39"). Умножаем на курс.
             const rubAmountRaw = parseFloat(amount) * exchangeRate;
-            // Округляем до 2 знаков (например, 239.54)
             const rubAmount = parseFloat(rubAmountRaw.toFixed(2));
 
-            // Данные для подписи (порядок важен!)
-            // Теперь передаем rubAmount вместо amount
-            const signatureData = JSON.stringify({
-                sum: rubAmount, 
+            // Данные для подписи и отправки (ДОБАВИЛ successUrl и failUrl)
+            const payload = {
+                sum: rubAmount,
                 orderId: client_id,
-                shopId: LAVA_SHOP_ID
-            });
+                shopId: LAVA_SHOP_ID,
+                successUrl: successUrl, // <--- Добавлено
+                failUrl: failUrl        // <--- Добавлено
+            };
+
+            const signatureData = JSON.stringify(payload);
 
             // Генерируем подпись HMAC-SHA256
             const signature = crypto
@@ -125,9 +132,9 @@ export async function POST(req) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Signature': signature 
+                    'Signature': signature
                 },
-                body: signatureData 
+                body: signatureData
             });
 
             const lavaResult = await lavaResponse.json();
@@ -140,10 +147,10 @@ export async function POST(req) {
             }
 
         } else {
-
-
-            // === DV.NET (Старая логика) ===
-            paymentUrl = `${DVNET_DOMAIN}/pay/store/${DVNET_STORE_ID}/${client_id}?amount=${amount}`;
+            // === DV.NET ===
+            // Добавляем return_url в конец ссылки (обязательно encodeURIComponent)
+            const encodedReturnUrl = encodeURIComponent(successUrl);
+            paymentUrl = `${DVNET_DOMAIN}/pay/store/${DVNET_STORE_ID}/${client_id}?amount=${amount}&return_url=${encodedReturnUrl}`;
         }
 
         return NextResponse.json({ url: paymentUrl });
