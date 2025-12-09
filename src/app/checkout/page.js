@@ -3,7 +3,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase.js'; 
+import { supabase } from '@/lib/supabase.js';
 import Link from 'next/link';
 
 export default function CheckoutPage() {
@@ -20,7 +20,11 @@ function CheckoutContent() {
 
     const productName = searchParams.get('name') || 'Прокси';
     const productId = searchParams.get('id');
-    const priceCents = parseInt(searchParams.get('price') || '0');
+    
+    // ИСПРАВЛЕНИЕ ТУТ: Берем число с точкой (2.39) и переводим в центы (239)
+    const rawPrice = parseFloat(searchParams.get('price') || '0');
+    const priceCents = Math.round(rawPrice * 100);
+
     const quantity = searchParams.get('qty');
     const period = searchParams.get('period');
     const country = searchParams.get('country');
@@ -30,10 +34,32 @@ function CheckoutContent() {
     const [balance, setBalance] = useState(0);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
-    
-    // По умолчанию выбираем шлюз (DV.Net), но можно менять
-    const [paymentProvider, setPaymentProvider] = useState('dvnet'); 
+   
+    const [paymentProvider, setPaymentProvider] = useState('dvnet');
     const [paymentMethod, setPaymentMethod] = useState('gateway'); // 'gateway' или 'balance'
+
+    // --- МЕТРИКА 1: Фиксируем начало оформления (Checkout Step 1) ---
+    useEffect(() => {
+        if (priceCents > 0) {
+            if (typeof window !== 'undefined' && window.dataLayer) {
+                window.dataLayer.push({
+                    "ecommerce": {
+                        "checkout": {
+                            "actionField": { "step": 1 },
+                            "products": [{
+                                "id": productId || productName,
+                                "name": productName,
+                                "price": priceCents / 100, // Отправляем доллары
+                                "quantity": parseInt(quantity) || 1,
+                                "category": "Proxy"
+                            }]
+                        }
+                    }
+                });
+            }
+        }
+    }, [priceCents, productName, productId, quantity]);
+    // ----------------------------------------------------------------
 
     useEffect(() => {
         const init = async () => {
@@ -55,7 +81,29 @@ function CheckoutContent() {
             return;
         }
         setProcessing(true);
-        
+
+        // --- МЕТРИКА 2: Фиксируем выбор оплаты перед отправкой (Checkout Step 2) ---
+        if (typeof window !== 'undefined' && window.dataLayer) {
+            window.dataLayer.push({
+                "ecommerce": {
+                    "checkout": {
+                        "actionField": { 
+                            "step": 2, 
+                            "option": paymentMethod === 'balance' ? 'Balance' : paymentProvider 
+                        },
+                        "products": [{
+                            "id": productId || productName,
+                            "name": productName,
+                            "price": priceCents / 100,
+                            "quantity": parseInt(quantity) || 1,
+                            "category": "Proxy"
+                        }]
+                    }
+                }
+            });
+        }
+        // --------------------------------------------------------------------------
+       
         const endpoint = paymentMethod === 'balance' ? '/api/purchase' : '/api/checkout';
 
         try {
@@ -63,11 +111,11 @@ function CheckoutContent() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId: user?.id, 
-                    email: email, 
+                    userId: user?.id,
+                    email: email,
                     product: { name: productName, id: productId },
                     quantity, period, country, amountCents: priceCents,
-                    provider: paymentProvider // <-- Передаем выбранного провайдера (lava/dvnet)
+                    provider: paymentProvider 
                 })
             });
 
@@ -75,6 +123,28 @@ function CheckoutContent() {
 
             if (paymentMethod === 'balance') {
                 if (data.success) {
+                    // --- МЕТРИКА 3: Покупка с баланса (Purchase) ---
+                    if (typeof window !== 'undefined' && window.dataLayer) {
+                        window.dataLayer.push({
+                            "ecommerce": {
+                                "purchase": {
+                                    "actionField": {
+                                        "id": "balance_" + Math.floor(Math.random() * 100000),
+                                        "revenue": priceCents / 100
+                                    },
+                                    "products": [{
+                                        "id": productId || productName,
+                                        "name": productName,
+                                        "price": priceCents / 100,
+                                        "quantity": parseInt(quantity) || 1,
+                                        "category": "Proxy"
+                                    }]
+                                }
+                            }
+                        });
+                    }
+                    // ------------------------------------------------
+
                     window.location.href = '/profile';
                 } else {
                     alert('Ошибка: ' + data.error);
@@ -112,12 +182,10 @@ function CheckoutContent() {
                     {!user && <p className="text-xs text-gray-400 mt-2 ml-1">Аккаунт будет создан автоматически, доступ придет на email.</p>}
                 </div>
 
-                {/* ВЫБОР СПОСОБА ОПЛАТЫ */}
                 <div className="mb-8 space-y-3">
                     <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Способ оплаты</label>
-                    
-                    {/* КНОПКА DV.NET */}
-                    <button 
+                   
+                    <button
                         onClick={() => { setPaymentMethod('gateway'); setPaymentProvider('dvnet'); }}
                         className={`w-full p-4 rounded-xl border-2 flex justify-between items-center transition ${paymentProvider === 'dvnet' && paymentMethod === 'gateway' ? 'border-[#E85D04] bg-orange-50/50' : 'border-gray-100 hover:border-gray-300'}`}
                     >
@@ -125,8 +193,7 @@ function CheckoutContent() {
                         {paymentProvider === 'dvnet' && paymentMethod === 'gateway' && <span className="text-[#E85D04]">✔</span>}
                     </button>
 
-                    {/* КНОПКА LAVA (ДОБАВЛЕНО!) */}
-                    <button 
+                    <button
                         onClick={() => { setPaymentMethod('gateway'); setPaymentProvider('lava'); }}
                         className={`w-full p-4 rounded-xl border-2 flex justify-between items-center transition ${paymentProvider === 'lava' && paymentMethod === 'gateway' ? 'border-[#702cf9] bg-purple-50' : 'border-gray-100 hover:border-gray-300'}`}
                     >
@@ -134,12 +201,11 @@ function CheckoutContent() {
                         {paymentProvider === 'lava' && paymentMethod === 'gateway' && <span className="text-[#702cf9]">✔</span>}
                     </button>
 
-                    {/* КНОПКА БАЛАНС */}
-                    <button 
+                    <button
                         onClick={() => balance >= priceCents && setPaymentMethod('balance')}
                         disabled={balance < priceCents}
                         className={`w-full p-4 rounded-xl border-2 flex justify-between items-center transition ${
-                            balance < priceCents ? 'opacity-50 cursor-not-allowed border-gray-100 bg-gray-50' : 
+                            balance < priceCents ? 'opacity-50 cursor-not-allowed border-gray-100 bg-gray-50' :
                             paymentMethod === 'balance' ? 'border-green-500 bg-green-50' : 'border-gray-100 hover:border-gray-300'
                         }`}
                     >

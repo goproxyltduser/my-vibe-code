@@ -233,20 +233,40 @@ const PricingCard = ({ product, currentSession, router, userBalance }) => {
 
 
     // ЛОГИКА: РЕДИРЕКТ НА CHECKOUT (БЕЗ РЕГИСТРАЦИИ)
-    const handleBuyClick = () => {
-        const amountCents = Math.round(parseFloat(calculations.total) * 100);
+       const handleBuyClick = () => {
+        const price = parseFloat(calculations.total);
+        
+        // 1. ОТПРАВЛЯЕМ В МЕТРИКУ (Добавление в корзину)
+        if (typeof window !== 'undefined' && window.dataLayer) {
+            window.dataLayer.push({
+                "ecommerce": {
+                    "add": {
+                        "products": [{
+                            "id": product.id,
+                            "name": product.name,
+                            "price": price,
+                            "quantity": quantity
+                        }]
+                    }
+                }
+            });
+            console.log("Метрика: add event sent");
+        }
 
+        // 2. ПЕРЕХОДИМ НА CHECKOUT
+        // Передаем параметры в URL
         const params = new URLSearchParams({
-            id: product.id,
-            name: product.name,
-            price: amountCents,
-            qty: quantity,
-            period: period,
+            product: product.name,
+            price: price.toString(),
+            quantity: quantity.toString(),
+            period: period.toString(),
             country: country
         });
-        
+
         router.push(`/checkout?${params.toString()}`);
     };
+
+
 
 
     return (
@@ -495,34 +515,45 @@ export default function HomePage() {
 
 
              // ЛОГИКА ПОКУПКИ ПАКЕТА (РЕДИРЕКТ НА CHECKOUT)
-    const handlePackageBuy = (product, qty) => {
-        // 1. Считаем скидку и сумму (чтобы передать правильную цену)
-        const isIPv6 = product.name.toLowerCase().includes('ipv6');
+       const handlePackageBuy = (pkg, qty) => {
+        // Расчет цены
         let discount = 0;
-        
-        if (isIPv6) {
-            discount = Math.min(Math.floor(qty / 50) * 5, 40);
-        } else {
-            discount = Math.min(Math.floor(qty / 5) * 5, 40);
-        }
-        
-        const discountedPricePerUnit = product.price_per_unit * ((100 - discount) / 100);
-        const total = discountedPricePerUnit * qty;
-        const amountCents = Math.round(total);
+        if (qty >= 50) discount = 15;
+        else if (qty >= 20) discount = 10;
+        else if (qty >= 10) discount = 5;
 
-        // 2. Формируем параметры для URL
+        const pricePerUnit = pkg.price_per_unit * ((100 - discount) / 100);
+        const totalPrice = (pricePerUnit * qty) / 100; // Цена в долларах
+
+        // 1. МЕТРИКА
+        if (typeof window !== 'undefined' && window.dataLayer) {
+            window.dataLayer.push({
+                "ecommerce": {
+                    "add": {
+                        "products": [{
+                            "id": pkg.id,
+                            "name": pkg.name,
+                            "price": totalPrice,
+                            "quantity": qty
+                        }]
+                    }
+                }
+            });
+        }
+
+        // 2. РЕДИРЕКТ НА CHECKOUT
         const params = new URLSearchParams({
-            id: product.id,
-            name: product.name,
-            price: amountCents,
-            qty: qty,
-            period: 1, // Пакеты обычно на 1 месяц
-            country: 'Россия' // Можно добавить выбор страны в виджет позже, пока ставим дефолт
+            product: pkg.name,
+            price: totalPrice.toFixed(2),
+            quantity: qty.toString(),
+            period: "30", // Пакеты обычно на 30 дней
+            country: "mixed" // Или конкретная страна
         });
-        
-        // 3. Переходим на страницу оформления (Guest Checkout работает там)
+
         router.push(`/checkout?${params.toString()}`);
     };
+
+
 
 
 
