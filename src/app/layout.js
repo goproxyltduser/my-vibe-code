@@ -2,8 +2,8 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'ProxyVibe Service',
-  description: 'Аренда надежных прокси',
+  title: 'Прокси под любые цели',
+  description: 'Купить быстрые и анонимные IPv4 и IPv6 прокси. Выдача в одни руки, высокая скорость.',
 };
 
 export default function RootLayout({ children }) {
