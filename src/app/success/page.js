@@ -1,82 +1,64 @@
-// src/app/success/page.js
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, Suspense } from 'react'; // Добавил Suspense
 import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 
-export default function SuccessPage() {
+// 1. Внутренний компонент с логикой (читает URL)
+function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const sentRef = useRef(false); // Защита от дублей при перезагрузке
+  const sentRef = useRef(false);
 
   useEffect(() => {
-    // Если уже отправили - не отправляем снова
     if (sentRef.current) return;
 
-    // Получаем данные из URL
     const amount = searchParams.get('amount');
-    const productName = searchParams.get('product');
-    const orderId = searchParams.get('order_id') || Math.floor(Math.random() * 100000).toString();
-    const type = searchParams.get('type') || 'purchase'; // 'proxy' или 'balance'
+    const type = searchParams.get('type'); 
+    const productName = searchParams.get('product'); // Получаем имя, если передали
 
-    if (amount && productName) {
+    if (amount) {
       if (typeof window !== 'undefined' && window.dataLayer) {
         window.dataLayer.push({
           "ecommerce": {
             "purchase": {
               "actionField": {
-                "id": orderId,
+                "id": Math.floor(Math.random() * 100000).toString(),
                 "revenue": parseFloat(amount)
               },
               "products": [
                 {
-                  "id": type === 'balance' ? 'balance_topup' : orderId,
-                  "name": productName, // Например: "IPv4 USA" или "Пополнение баланса"
+                  "id": type === 'balance' ? 'balance_topup' : 'proxy_buy',
+                  "name": productName || (type === 'balance' ? 'Пополнение баланса' : 'Покупка прокси'),
                   "price": parseFloat(amount),
-                  "quantity": 1,
-                  "category": type === 'balance' ? 'Balance' : 'Proxy'
+                  "quantity": 1
                 }
               ]
             }
           }
         });
-        console.log(`Метрика: Покупка ${productName} на сумму ${amount} отправлена.`);
         sentRef.current = true;
       }
+      // Через 5 секунд в профиль
+      setTimeout(() => router.push('/profile'), 5000);
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   return (
-    <div className="min-h-screen bg-background text-text flex flex-col items-center justify-center p-4">
-      <div className="bg-surface p-8 rounded-2xl shadow-lg text-center max-w-md w-full border border-gray-700">
-        <div className="w-16 h-16 bg-success/20 text-success rounded-full flex items-center justify-center mx-auto mb-6">
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-        </div>
-        
-        <h1 className="text-2xl font-bold mb-2">Оплата прошла успешно!</h1>
-        <p className="text-gray-400 mb-6">
-          Спасибо за покупку. Ваши услуги уже доступны в личном кабинете.
-        </p>
-
-        <div className="space-y-3">
-          <Link 
-            href="/profile" 
-            className="block w-full bg-primary hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl transition-all"
-          >
-            Перейти в кабинет
-          </Link>
-          <Link 
-            href="/" 
-            className="block w-full bg-secondary hover:bg-slate-700 text-text font-semibold py-3 px-6 rounded-xl transition-all"
-          >
-            На главную
-          </Link>
-        </div>
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-text">
+      <h1 className="text-3xl font-bold text-success mb-4">Оплата прошла успешно!</h1>
+      <p>Сумма: ${searchParams.get('amount')}</p>
+      <p className="text-gray-400 mt-4">Сейчас вы будете перенаправлены в кабинет...</p>
     </div>
+  );
+}
+
+// 2. Основной компонент страницы (Обертка Suspense)
+export default function SuccessPage() {
+  return (
+    // Suspense нужен, чтобы useSearchParams не ломал сборку
+    <Suspense fallback={<div className="text-center p-10">Загрузка данных заказа...</div>}>
+      <SuccessContent />
+    </Suspense>
   );
 }
 
