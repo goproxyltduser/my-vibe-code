@@ -18,8 +18,14 @@ function CheckoutContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
-    const productName = searchParams.get('name') || 'Прокси';
+    // --- БЫЛО (Ошибка: искали только 'name') ---
+    // const productName = searchParams.get('name') || 'Прокси';
+
+    // --- СТАЛО (Исправление: ищем и 'product', и 'name') ---
+    const productName = searchParams.get('product') || searchParams.get('name') || 'Прокси';
+    
     const productId = searchParams.get('id');
+
     
     // ИСПРАВЛЕНИЕ ТУТ: Берем число с точкой (2.39) и переводим в центы (239)
     const rawPrice = parseFloat(searchParams.get('price') || '0');
