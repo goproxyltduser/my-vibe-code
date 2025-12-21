@@ -566,68 +566,112 @@ export default function HomePage() {
     return (
         <main className="min-h-screen bg-[#F8FAFC] font-sans text-[#1E293B]"> 
             
-            {/* 1. HEADER */}
-                                  {/* 1. HEADER (АДАПТИВНЫЙ) */}
-            <header className="flex flex-wrap md:flex-nowrap justify-between items-center px-6 md:px-12 py-5 bg-[#181818] border-b border-[#333] sticky top-0 z-50">
-                <div className="flex items-center gap-4">
-                    <Link href="/" className="flex items-center gap-2 group">
-                        <div className="relative h-10 w-10 md:h-14 md:w-14">
-                             <Image src="/logo.png" alt="Logo" fill className="object-contain" priority />
-                        </div>
-                        <div className="text-2xl md:text-3xl font-extrabold tracking-tighter uppercase text-white group-hover:opacity-80 transition">
-                            <span className="text-[#E85D04]">GO</span>PROXY
-                        </div>
-                    </Link>
+            {/* 1. HEADER (АДАПТИВНЫЙ + ИНСТРУКЦИЯ) */}
+<header className="flex flex-wrap md:flex-nowrap justify-between items-center px-4 md:px-8 py-4 bg-[#181818] border-b border-[#333] sticky top-0 z-50">
+    
+    {/* ЛОГОТИП */}
+    <div className="flex items-center gap-4 shrink-0">
+        <Link href="/" className="flex items-center gap-2 group">
+            <div className="relative h-9 w-9 md:h-12 md:w-12">
+                 <Image src="/logo.png" alt="Logo" fill className="object-contain" priority />
+            </div>
+            <div className="text-xl md:text-2xl font-extrabold tracking-tighter uppercase text-white group-hover:opacity-80 transition">
+                <span className="text-[#E85D04]">GO</span>PROXY
+            </div>
+        </Link>
+    </div>
+
+    {/* КНОПКА БУРГЕР (МОБИЛЬНАЯ) */}
+    <button
+        className="md:hidden text-white focus:outline-none p-2"
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+    >
+        {isMobileMenuOpen ? (
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        ) : (
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+        )}
+    </button>
+   
+    {/* ДЕСКТОПНОЕ МЕНЮ (Центр) */}
+    {/* Используем gap вместо space-x для лучшего контроля, уменьшили шрифт до text-xs */}
+    <nav className="hidden md:flex items-center justify-center flex-1 gap-4 lg:gap-6 font-bold text-xs text-gray-300 uppercase tracking-wide mx-4">
+        <a href="#tariffs" className="hover:text-[#E85D04] transition-colors whitespace-nowrap">Тарифы</a>
+        <a href="#usecases" className="hover:text-[#E85D04] transition-colors whitespace-nowrap">Применение</a>
+        <a href="#faq" className="hover:text-[#E85D04] transition-colors whitespace-nowrap">FAQ</a>
+        
+        <a href="#partners-block" className="hover:text-[#E85D04] transition-colors text-[#E85D04] whitespace-nowrap">
+            Партнерам
+        </a>
+
+        {/* --- НОВАЯ КНОПКА-ИНСТРУКЦИЯ --- */}
+        <Link 
+            href="/help/proxy-messengers" 
+            className="flex items-center gap-2 px-3 py-1.5 bg-[#222] hover:bg-[#333] border border-[#333] hover:border-gray-600 rounded-full transition-all group cursor-pointer"
+        >
+            <span className="normal-case text-[10px] lg:text-xs text-gray-400 group-hover:text-white font-medium whitespace-nowrap">
+                Настройка для
+            </span>
+            <div className="flex items-center gap-1">
+                {/* Иконка Telegram */}
+                <svg className="w-4 h-4 text-[#2AABEE]" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                {/* Иконка WhatsApp */}
+                <svg className="w-4 h-4 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            </div>
+        </Link>
+        {/* --------------------------------- */}
+
+        <a href="#contacts" className="hover:text-[#E85D04] transition-colors whitespace-nowrap">Контакты</a>
+    </nav>
+
+    {/* ДЕСКТОПНЫЕ КНОПКИ (Право) */}
+    <div className="hidden md:flex w-auto justify-end gap-3 shrink-0">
+            <a href="https://t.me/maxim_hayd" target="_blank" className="px-4 py-2 text-xs lg:text-sm border border-gray-600 text-gray-300 font-bold rounded-lg hover:border-white hover:text-white transition whitespace-nowrap">Опт</a>
+            <Link href={session ? "/profile" : "/login"} className="px-5 py-2 text-xs lg:text-sm bg-[#E85D04] text-white font-bold rounded-lg hover:bg-[#cc5200] transition shadow-lg whitespace-nowrap">
+            {session ? "Кабинет" : "Войти"}
+        </Link>
+    </div>
+
+    {/* МОБИЛЬНОЕ МЕНЮ (ВЫПАДАЮЩЕЕ) */}
+    {isMobileMenuOpen && (
+        <div className="w-full md:hidden flex flex-col items-center gap-5 pt-8 pb-8 border-t border-[#333] mt-4 animate-fadeIn absolute top-full left-0 bg-[#181818] shadow-2xl h-screen overflow-y-auto">
+            <a href="#tariffs" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-[#E85D04] font-bold text-lg">Тарифы</a>
+            <a href="#usecases" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-[#E85D04] font-bold text-lg">Применение</a>
+            
+            {/* ССЫЛКА НА ИНСТРУКЦИЮ В МОБИЛЬНОМ МЕНЮ */}
+            <Link 
+                href="/help/proxy-messengers" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-6 py-3 bg-[#222] rounded-xl border border-[#333]"
+            >
+                <div className="flex gap-2">
+                    <svg className="w-6 h-6 text-[#2AABEE]" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                    <svg className="w-6 h-6 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                 </div>
+                <span className="text-white font-medium">Как настроить</span>
+            </Link>
 
-                {/* КНОПКА БУРГЕР (ВИДНА ТОЛЬКО НА МОБИЛЬНЫХ) */}
-                <button 
-                    className="md:hidden text-white focus:outline-none"
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                >
-                    {/* Иконка меняется (Меню / Крестик) */}
-                    {isMobileMenuOpen ? (
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    ) : (
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                    )}
-                </button>
-                
-                {/* ДЕСКТОПНОЕ МЕНЮ (СКРЫТО НА МОБИЛЬНЫХ) */}
-                <nav className="hidden md:flex justify-center flex-1 space-x-8 font-bold text-sm text-gray-300 uppercase tracking-wide">
-                    <a href="#tariffs" className="hover:text-[#E85D04] transition-colors">Тарифы</a>
-                    <a href="#usecases" className="hover:text-[#E85D04] transition-colors">Применение</a>
-                    <a href="#faq" className="hover:text-[#E85D04] transition-colors">FAQ</a>
-                    <a href="#contacts" className="hover:text-[#E85D04] transition-colors">Контакты</a>
-                </nav>
+            <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-[#E85D04] font-bold text-lg">FAQ</a>
+            
+            <a href="#partners-block" onClick={() => setIsMobileMenuOpen(false)} className="text-[#E85D04] hover:text-white font-bold text-lg">
+                Партнерам
+            </a>
+            
+            <a href="#contacts" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-[#E85D04] font-bold text-lg">Контакты</a>
 
-                {/* ДЕСКТОПНЫЕ КНОПКИ */}
-                <div className="hidden md:flex w-auto justify-end gap-4">
-                     <a href="https://t.me/maxim_hayd" target="_blank" className="px-5 py-2.5 border border-gray-600 text-gray-300 font-bold rounded-lg hover:border-white hover:text-white transition">Опт</a>
-                     <Link href={session ? "/profile" : "/login"} className="px-6 py-2.5 bg-[#E85D04] text-white font-bold rounded-lg hover:bg-[#cc5200] transition shadow-lg">
-                        {session ? "Кабинет" : "Войти"}
-                    </Link>
-                </div>
+            <div className="flex flex-col w-full gap-3 mt-4 px-4">
+                <Link href={session ? "/profile" : "/login"} className="w-full py-3 bg-[#E85D04] text-white font-bold rounded-lg text-center">
+                    {session ? "Личный кабинет" : "Войти"}
+                </Link>
+                 <a href="https://t.me/maxim_hayd" target="_blank" className="w-full py-3 border border-gray-600 text-gray-300 font-bold rounded-lg text-center">
+                    Опт
+                </a>
+            </div>
+        </div>
+    )}
+</header>
 
-                {/* МОБИЛЬНОЕ МЕНЮ (ВЫПАДАЮЩЕЕ) */}
-                {isMobileMenuOpen && (
-                    <div className="w-full md:hidden flex flex-col items-center gap-4 pt-6 pb-4 border-t border-[#333] mt-4 animate-fadeIn">
-                        <a href="#tariffs" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-[#E85D04] font-bold text-lg">Тарифы</a>
-                        <a href="#usecases" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-[#E85D04] font-bold text-lg">Применение</a>
-                        <a href="#faq" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-[#E85D04] font-bold text-lg">FAQ</a>
-                        <a href="#contacts" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-[#E85D04] font-bold text-lg">Контакты</a>
-                        
-                        <div className="flex flex-col w-full gap-3 mt-4 px-4">
-                            <Link href={session ? "/profile" : "/login"} className="w-full py-3 bg-[#E85D04] text-white font-bold rounded-lg text-center">
-                                {session ? "Личный кабинет" : "Войти"}
-                            </Link>
-                             <a href="https://t.me/maxim_hayd" target="_blank" className="w-full py-3 border border-gray-600 text-gray-300 font-bold rounded-lg text-center">
-                                Опт
-                            </a>
-                        </div>
-                    </div>
-                )}
-            </header>
+
 
 
 
@@ -964,6 +1008,82 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
+                      {/* 7.5. ПАРТНЕРСКАЯ ПРОГРАММА (ОБНОВЛЕННЫЙ БЛОК) */}
+<section id="partners-block" className="py-20 px-6 bg-[#E85D04] overflow-hidden relative scroll-mt-24">
+  
+  {/* Декоративный фон */}
+  <div className="absolute top-0 left-0 w-64 h-64 bg-white opacity-10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl pointer-events-none"></div>
+  <div className="absolute bottom-0 right-0 w-96 h-96 bg-black opacity-10 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl pointer-events-none"></div>
+
+  <div className="max-w-6xl mx-auto relative z-10 text-white">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      
+      {/* ЛЕВАЯ КОЛОНКА: ТЕКСТ */}
+      <div className="text-center lg:text-left order-2 lg:order-1 flex flex-col items-center lg:items-start">
+        <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-2 leading-none">
+          Партнерская программа
+        </h2>
+        <p className="text-xl md:text-2xl font-medium opacity-90 mb-10 text-orange-100 uppercase tracking-wide">
+          создай пассивный доход
+        </p>
+
+        {/* Пункты списка */}
+        <ul className="space-y-6 mb-10 text-lg md:text-xl font-medium text-left w-full max-w-lg">
+          <li className="flex items-start gap-4">
+            <div className="mt-1 min-w-[28px] w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-lg shrink-0">
+               <svg className="w-5 h-5 text-[#E85D04]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <span className="leading-snug">
+              Зарабатывай <span className="font-bold border-b-2 border-white/40">20%</span> с первой продажи и <span className="font-bold border-b-2 border-white/40">10%</span> пожизненно
+            </span>
+          </li>
+          
+          <li className="flex items-start gap-4">
+             <div className="mt-1 min-w-[28px] w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-lg shrink-0">
+               <svg className="w-5 h-5 text-[#E85D04]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <span className="leading-snug">Прозрачные показатели и удобный личный кабинет</span>
+          </li>
+
+          <li className="flex items-start gap-4">
+             <div className="mt-1 min-w-[28px] w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-lg shrink-0">
+               <svg className="w-5 h-5 text-[#E85D04]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <span className="leading-snug">Индивидуальные условия для крупных партнеров</span>
+          </li>
+        </ul>
+
+        {/* Кнопка */}
+        <Link 
+            href="/partners" 
+            className="inline-block px-10 py-5 bg-white text-[#E85D04] font-black rounded-2xl text-lg hover:bg-gray-100 hover:-translate-y-1 transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
+        >
+            Стать партнером
+        </Link>
+      </div>
+
+      {/* ПРАВАЯ КОЛОНКА: ИЛЛЮСТРАЦИЯ */}
+      <div className="relative order-1 lg:order-2 flex justify-center lg:justify-end">
+         <div className="relative w-full max-w-md lg:max-w-full">
+            <Image 
+              src="/images/partners-illustration.png" 
+              alt="Иллюстрация партнерской программы"
+              width={700}
+              height={700}
+              className="object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500 ease-in-out"
+              priority={false}
+            />
+         </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+
+
+
 
             {/* 8. FOOTER */}
             <footer id="contacts" className="py-20 px-6 bg-black text-white">

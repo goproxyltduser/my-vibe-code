@@ -16,7 +16,7 @@ const DVNET_STORE_ID = 'c90fa863-b9fb-450f-93e0-736df5ed22c2';
 
 const LAVA_SHOP_ID = process.env.LAVA_SHOP_ID;
 const LAVA_SECRET_KEY = process.env.LAVA_SECRET_KEY;
-const DOMAIN = 'https://goproxy.tech'; // Твой домен
+const DOMAIN = 'https://goproxy.tech'; 
 
 export async function POST(req) {
     try {
@@ -29,7 +29,8 @@ export async function POST(req) {
             userId,
             email,
             type = 'order',
-            provider = 'dvnet'
+            provider = 'dvnet',
+            referralId
         } = await req.json();
 
         let finalUserId = userId;
@@ -37,6 +38,7 @@ export async function POST(req) {
 
         // 1. АВТОРЕГИСТРАЦИЯ (Если гость)
         if (!finalUserId && email) {
+            // Проверяем, есть ли юзер
             const { data: existingUser } = await supabaseAdmin
                 .from('profiles')
                 .select('id')
@@ -46,33 +48,55 @@ export async function POST(req) {
             if (existingUser) {
                 finalUserId = existingUser.id;
             } else {
+                // Создаем нового. 
+                // ВАЖНО: redirectTo ведет на страницу, которая обработает вход
                 const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-                    redirectTo: `${req.headers.get('origin')}/profile`
+                    redirectTo: `${DOMAIN}/profile` 
                 });
-                if (createError) return NextResponse.json({ error: 'Ошибка регистрации: ' + createError.message }, { status: 400 });
-                finalUserId = newUser.user.id;
+                
+                if (createError) {
+                    // Если ошибка "User already registered", пробуем найти его снова
+                    // (Иногда бывает гонка запросов)
+                    const { data: retryUser } = await supabaseAdmin.from('profiles').select('id').eq('email', email).single();
+                    if (retryUser) finalUserId = retryUser.id;
+                    else return NextResponse.json({ error: 'Ошибка регистрации: ' + createError.message }, { status: 400 });
+                } else {
+                    finalUserId = newUser.user.id;
+                }
             }
         }
 
-        // Если юзер авторизован, но email не пришел с фронта, берем из базы (для metadata)
+        // Страховка: если юзер авторизован, но email не пришел с фронта
         if (finalUserId && !finalEmail) {
              const { data: u } = await supabaseAdmin.auth.admin.getUserById(finalUserId);
              finalEmail = u?.user?.email;
         }
 
-        if (!finalUserId) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 });
+        if (!finalUserId) return NextResponse.json({ error: 'Не удалось определить пользователя' }, { status: 400 });
+
+        // --- ПРИВЯЗКА РЕФЕРАЛА ---
+        if (referralId && finalUserId && referralId !== finalUserId) {
+            try {
+                await supabaseAdmin
+                    .from('profiles')
+                    .update({ referred_by: referralId })
+                    .eq('id', finalUserId)
+                    .is('referred_by', null);
+            } catch (e) {}
+        }
 
         // 2. СОЗДАЕМ ЗАКАЗ
-        const client_id = uuidv4(); // Наш внутренний ID заказа
+        const client_id = uuidv4();
        
         const metadata = {
             quantity,
             period,
-            country: country ? country.toLowerCase() : '',
+            // Нормализуем страну (ru, kz, us)
+            country: country ? country.toLowerCase() : 'ru', 
             type: product.name?.toLowerCase().includes('ipv6') ? 'IPv6' : 'IPv4',
             operation_type: type,
             provider,
-            customer_email: finalEmail // Гарантированно сохраняем email
+            customer_email: finalEmail
         };
        
         const orderData = {
@@ -85,24 +109,20 @@ export async function POST(req) {
         };
 
         const { error: orderError } = await supabaseAdmin.from('orders').insert([orderData]);
-        if (orderError) return NextResponse.json({ error: 'Ошибка БД' }, { status: 500 });
+        if (orderError) return NextResponse.json({ error: 'Ошибка БД: ' + orderError.message }, { status: 500 });
        
         // 3. ГЕНЕРАЦИЯ ССЫЛКИ
         let paymentUrl = '';
         const amount = (amountCents / 100).toFixed(2);
-
-        // URL для редиректа клиента
-        const metricType = type === 'topup' ? 'balance' : 'proxy';
-        const metricName = type === 'topup' ? 'Пополнение баланса' : (product.name || 'Proxy Purchase');
         
-        const successUrl = `${DOMAIN}/success?amount=${amount}&type=${metricType}&product=${encodeURIComponent(metricName)}&order_id=${client_id}`;
-        const failUrl = `${DOMAIN}/profile`;
-
+        // URL успеха - ведет на страницу успеха, где мы покажем "Спасибо"
+        const successUrl = `${DOMAIN}/success?amount=${amount}&order_id=${client_id}`;
+        
         if (provider === 'lava') {
             // === LAVA ===
-            if (!LAVA_SHOP_ID || !LAVA_SECRET_KEY) return NextResponse.json({ error: 'Lava ключи не найдены' }, { status: 500 });
+            if (!LAVA_SHOP_ID || !LAVA_SECRET_KEY) return NextResponse.json({ error: 'Lava config missing' }, { status: 500 });
 
-            // Курс валют
+            // Курс (хардкод 100 или запрос)
             let exchangeRate = 100;
             try {
                 const rateRes = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', { next: { revalidate: 3600 } });
@@ -110,19 +130,20 @@ export async function POST(req) {
                     const rateData = await rateRes.json();
                     exchangeRate = rateData.Valute.USD.Value;
                 }
-            } catch (e) { console.error('Ошибка курса:', e); }
+            } catch (e) {}
 
             const rubAmount = parseFloat((parseFloat(amount) * exchangeRate).toFixed(2));
 
-            // Формируем данные для Lava (включая webhook)
             const payload = {
                 sum: rubAmount,
                 orderId: client_id,
                 shopId: LAVA_SHOP_ID,
                 successUrl: successUrl,
-                failUrl: failUrl,
-                hookUrl: `${DOMAIN}/api/webhook/lava` // Вебхук для смены статуса
+                failUrl: `${DOMAIN}/profile`,
+                hookUrl: `${DOMAIN}/api/webhook/lava` // Лава иногда требует свой путь, но у нас универсальный dvnet-webhook тоже ловит json
             };
+            // ПРИМЕЧАНИЕ: Если ты используешь dvnet-webhook как универсальный, можно указать его:
+            // hookUrl: `${DOMAIN}/api/dvnet-webhook` 
 
             const signature = crypto.createHmac('sha256', LAVA_SECRET_KEY).update(JSON.stringify(payload)).digest('hex');
 
@@ -134,7 +155,7 @@ export async function POST(req) {
 
             const lavaResult = await lavaResponse.json();
             if (lavaResult.data?.url) paymentUrl = lavaResult.data.url;
-            else return NextResponse.json({ error: 'Lava Error: ' + (lavaResult.error || 'Unknown') }, { status: 400 });
+            else return NextResponse.json({ error: 'Lava Error' }, { status: 400 });
 
         } else {
             // === DV.NET ===

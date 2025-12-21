@@ -18,16 +18,9 @@ function CheckoutContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
-    // --- БЫЛО (Ошибка: искали только 'name') ---
-    // const productName = searchParams.get('name') || 'Прокси';
-
-    // --- СТАЛО (Исправление: ищем и 'product', и 'name') ---
     const productName = searchParams.get('product') || searchParams.get('name') || 'Прокси';
-    
     const productId = searchParams.get('id');
-
-    
-    // ИСПРАВЛЕНИЕ ТУТ: Берем число с точкой (2.39) и переводим в центы (239)
+   
     const rawPrice = parseFloat(searchParams.get('price') || '0');
     const priceCents = Math.round(rawPrice * 100);
 
@@ -44,7 +37,7 @@ function CheckoutContent() {
     const [paymentProvider, setPaymentProvider] = useState('dvnet');
     const [paymentMethod, setPaymentMethod] = useState('gateway'); // 'gateway' или 'balance'
 
-    // --- МЕТРИКА 1: Фиксируем начало оформления (Checkout Step 1) ---
+    // --- МЕТРИКА 1: Фиксируем начало оформления ---
     useEffect(() => {
         if (priceCents > 0) {
             if (typeof window !== 'undefined' && window.dataLayer) {
@@ -55,7 +48,7 @@ function CheckoutContent() {
                             "products": [{
                                 "id": productId || productName,
                                 "name": productName,
-                                "price": priceCents / 100, // Отправляем доллары
+                                "price": priceCents / 100,
                                 "quantity": parseInt(quantity) || 1,
                                 "category": "Proxy"
                             }]
@@ -65,7 +58,6 @@ function CheckoutContent() {
             }
         }
     }, [priceCents, productName, productId, quantity]);
-    // ----------------------------------------------------------------
 
     useEffect(() => {
         const init = async () => {
@@ -88,14 +80,14 @@ function CheckoutContent() {
         }
         setProcessing(true);
 
-        // --- МЕТРИКА 2: Фиксируем выбор оплаты перед отправкой (Checkout Step 2) ---
+        // --- МЕТРИКА 2: Фиксируем выбор оплаты ---
         if (typeof window !== 'undefined' && window.dataLayer) {
             window.dataLayer.push({
                 "ecommerce": {
                     "checkout": {
-                        "actionField": { 
-                            "step": 2, 
-                            "option": paymentMethod === 'balance' ? 'Balance' : paymentProvider 
+                        "actionField": {
+                            "step": 2,
+                            "option": paymentMethod === 'balance' ? 'Balance' : paymentProvider
                         },
                         "products": [{
                             "id": productId || productName,
@@ -108,9 +100,11 @@ function CheckoutContent() {
                 }
             });
         }
-        // --------------------------------------------------------------------------
        
         const endpoint = paymentMethod === 'balance' ? '/api/purchase' : '/api/checkout';
+
+        // --- ЛОГИКА РЕФЕРАЛОВ: Достаем ID из памяти браузера ---
+        const referralId = typeof window !== 'undefined' ? localStorage.getItem('referral_id') : null;
 
         try {
             const res = await fetch(endpoint, {
@@ -121,7 +115,8 @@ function CheckoutContent() {
                     email: email,
                     product: { name: productName, id: productId },
                     quantity, period, country, amountCents: priceCents,
-                    provider: paymentProvider 
+                    provider: paymentProvider,
+                    referralId: referralId // <--- ОТПРАВЛЯЕМ РЕФЕРАЛА НА СЕРВЕР
                 })
             });
 
@@ -129,7 +124,7 @@ function CheckoutContent() {
 
             if (paymentMethod === 'balance') {
                 if (data.success) {
-                    // --- МЕТРИКА 3: Покупка с баланса (Purchase) ---
+                    // --- МЕТРИКА 3: Покупка с баланса ---
                     if (typeof window !== 'undefined' && window.dataLayer) {
                         window.dataLayer.push({
                             "ecommerce": {
@@ -149,7 +144,6 @@ function CheckoutContent() {
                             }
                         });
                     }
-                    // ------------------------------------------------
 
                     window.location.href = '/profile';
                 } else {

@@ -1,6 +1,7 @@
 // src/app/layout.js
 import './globals.css';
-import Script from 'next/script'; // Импортируем компонент для скриптов
+import Script from 'next/script';
+import ReferralTracker from '@/components/ReferralTracker'; // <--- 1. ИМПОРТ
 
 export const metadata = {
   title: 'Прокси под любые цели',
@@ -11,8 +12,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ru">
       <body className="font-sans bg-background text-text antialiased">
-        
-        {/* 1. Инициализация DataLayer (нужно для электронной коммерции) */}
+       
+        {/* Компонент, который ловит ?ref=ID и сохраняет его */}
+        <ReferralTracker /> {/* <--- 2. ВСТАВКА */}
+
+        {/* 1. Инициализация DataLayer */}
         <Script id="datalayer-init" strategy="beforeInteractive">
           {`window.dataLayer = window.dataLayer || [];`}
         </Script>
@@ -36,13 +40,13 @@ export default function RootLayout({ children }) {
           `}
         </Script>
 
-        {/* 3. NoScript для тех, у кого отключен JS (стили исправлены под React) */}
+        {/* 3. NoScript */}
         <noscript>
           <div>
-            <img 
-              src="https://mc.yandex.ru/watch/105757316" 
-              style={{ position: 'absolute', left: '-9999px' }} 
-              alt="" 
+            <img
+              src="https://mc.yandex.ru/watch/105757316"
+              style={{ position: 'absolute', left: '-9999px' }}
+              alt=""
             />
           </div>
         </noscript>
