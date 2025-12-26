@@ -1086,121 +1086,122 @@ export default function HomePage() {
 
 
             {/* 8. FOOTER */}
-            <footer id="contacts" className="py-20 px-6 bg-black text-white">
-                               <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-10">
-                    
-                    {/* ЛЕВАЯ ГРУППА: GOPROXY + КОНТАКТЫ */}
-                    <div className="flex flex-col md:flex-row gap-10 md:gap-32">
-                        
-                        {/* 1. GOPROXY */}
-                        <div className="text-left max-w-xs">
-                            <div className="text-3xl font-extrabold mb-6 text-[#E85D04] tracking-tighter">GOPROXY</div>
-                            <p className="text-gray-400 mb-6 text-sm leading-relaxed">Proxy под любые цели. Быстрые, стабильные и безопасные IPv4 и IPv6 прокси.</p>
-                            <p className="text-gray-600 text-xs">© 2025 INTERNET COMMUNICATION SERVICE LTD. Все права защищены.</p>
-                                                          {/* ЛОГОТИП ПЛАТЕЖКИ */}
-                            <div className="mt-6">
-                                <Image 
-                                    src="/lava.png" 
-                                    alt="Lava Payment" 
-                                    width={120} 
-                                    height={40} 
-                                    className="object-contain opacity-80 hover:opacity-100 transition"
-                                />
-                            </div>
+<footer id="contacts" className="py-20 px-6 bg-black text-white">
+    <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-10">
+        
+        {/* ЛЕВАЯ ГРУППА: GOPROXY + КОНТАКТЫ */}
+        <div className="flex flex-col md:flex-row gap-10 md:gap-32">
+            
+            {/* 1. GOPROXY */}
+            <div className="text-left max-w-xs">
+                <div className="text-3xl font-extrabold mb-6 text-[#E85D04] tracking-tighter">GOPROXY</div>
+                <p className="text-gray-400 mb-6 text-sm leading-relaxed">Proxy под любые цели. Быстрые, стабильные и безопасные IPv4 и IPv6 прокси.</p>
+                <p className="text-gray-600 text-xs">© 2025 INTERNET COMMUNICATION SERVICE LTD. Все права защищены.</p>
+                
+                {/* ЛОГОТИПЫ ПЛАТЕЖЕК */}
+                <div className="mt-6 flex items-center gap-4">
+                    {/* Lava */}
+                    <Image
+                        src="/lava.png"
+                        alt="Lava Payment"
+                        width={120}
+                        height={40}
+                        className="object-contain opacity-80 hover:opacity-100 transition"
+                    />
 
-
-                        </div>
-
-                                               {/* 2. КОНТАКТЫ */}
-                        <div className="text-left">
-                            <h4 className="text-sm font-bold mb-8 text-gray-500 uppercase tracking-widest">Контакты</h4>
-                            
-                            {/* 1. Email */}
-                            <p className="mb-4 flex items-center gap-3 text-lg font-medium">
-                                <span className="text-[#E85D04]">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                                    </svg>
-                                </span> 
-                                <a href="mailto:goproxyltd@gmail.com" className="hover:text-white transition text-gray-300">goproxyltd@gmail.com</a>
-                            </p>
-
-                            {/* 2. Telegram Support */}
-                            <p className="mb-4 flex items-center gap-3 text-lg font-medium">
-                                <span className="text-[#E85D04]">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .24z"/>
-                                    </svg>
-                                </span> 
-                                <a href="https://t.me/maxim_hayd" target="_blank" className="hover:text-white transition text-gray-300">Telegram Support</a>
-                            </p>
-
-                            {/* 3. Telegram Channel (НОВЫЙ) */}
-                            <p className="mb-4 flex items-center gap-3 text-lg font-medium">
-                                <span className="text-[#E85D04]">
-                                    {/* Иконка громкоговорителя (News/Channel) */}
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.43.816 1.035.816 1.73 0 .695-.32 1.3-.816 1.73" />
-                                    </svg>
-                                </span> 
-                                <a href="https://t.me/goproxy_tech" target="_blank" className="hover:text-white transition text-gray-300">Наш Telegram канал</a>
-                            </p>
-
-                            {/* 4. Телефон */}
-                            <p className="flex items-center gap-3 text-lg font-medium">
-                                <span className="text-[#E85D04]">
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                                        <path fillRule="evenodd" d="M1.5 4.5a3 3 0 013-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 01-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 006.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 011.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 01-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 4.5V4.5z" clipRule="evenodd" />
-                                    </svg>
-                                </span> 
-                                <a href="tel:+97441186686" className="hover:text-white transition text-gray-300">+974 4 1186686</a>
-                            </p>
-                        </div>
-
-
-
-
-
-
-                    </div>
-
-                    {/* 3. ДОКУМЕНТЫ (Справа, но текст выровнен по левому краю) */}
-                                       {/* 3. ДОКУМЕНТЫ (Справа, но текст выровнен по левому краю) */}
-                    <div className="text-left">
-                        <h4 className="text-sm font-bold mb-8 text-gray-500 uppercase tracking-widest">Документы</h4>
-                        <ul className="space-y-4 text-sm text-gray-400 font-medium">
-                            {/* Ссылка на /terms */}
-                            <li>
-                                <Link href="/terms" className="hover:text-[#E85D04] transition">
-                                    Условия использования
-                                </Link>
-                            </li>
-                            {/* Ссылка на /privacy */}
-                            <li>
-                                <Link href="/privacy" className="hover:text-[#E85D04] transition">
-                                    Политика конфиденциальности
-                                </Link>
-                            </li>
-                            {/* Ссылка на /offer */}
-                            <li>
-                                <Link href="/offer" className="hover:text-[#E85D04] transition">
-                                    Публичная оферта
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/refund" className="hover:text-[#E85D04] transition">
-                                    Политика возврата
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-
-
-
+                    {/* FreeKassa (Добавлено) */}
+                    <a href="https://freekassa.net" target="_blank" rel="noopener noreferrer" className="opacity-80 hover:opacity-100 transition">
+                        <img 
+                            src="https://cdn.freekassa.net/banners/small-white-1.png" 
+                            title="Прием платежей на сайте для физических лиц и т.д." 
+                            alt="FreeKassa"
+                            className="h-9 w-auto" 
+                        />
+                    </a>
                 </div>
+            </div>
+
+            {/* 2. КОНТАКТЫ */}
+            <div className="text-left">
+                <h4 className="text-sm font-bold mb-8 text-gray-500 uppercase tracking-widest">Контакты</h4>
+                
+                {/* 1. Email */}
+                <p className="mb-4 flex items-center gap-3 text-lg font-medium">
+                    <span className="text-[#E85D04]">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                        </svg>
+                    </span>
+                    <a href="mailto:goproxyltd@gmail.com" className="hover:text-white transition text-gray-300">goproxyltd@gmail.com</a>
+                </p>
 
 
-            </footer>
+                {/* 2. Telegram Support */}
+                <p className="mb-4 flex items-center gap-3 text-lg font-medium">
+                    <span className="text-[#E85D04]">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .24z"/>
+                        </svg>
+                    </span>
+                    <a href="https://t.me/maxim_hayd" target="_blank" className="hover:text-white transition text-gray-300">Telegram Support</a>
+                </p>
+
+
+                {/* 3. Telegram Channel */}
+                <p className="mb-4 flex items-center gap-3 text-lg font-medium">
+                    <span className="text-[#E85D04]">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.43.816 1.035.816 1.73 0 .695-.32 1.3-.816 1.73" />
+                        </svg>
+                    </span>
+                    <a href="https://t.me/goproxy_tech" target="_blank" className="hover:text-white transition text-gray-300">Наш Telegram канал</a>
+                </p>
+
+
+                {/* 4. Телефон */}
+                <p className="flex items-center gap-3 text-lg font-medium">
+                    <span className="text-[#E85D04]">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                            <path fillRule="evenodd" d="M1.5 4.5a3 3 0 013-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 01-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 006.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 011.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 01-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 4.5V4.5z" clipRule="evenodd" />
+                        </svg>
+                    </span>
+                    <a href="tel:+97441186686" className="hover:text-white transition text-gray-300">+974 4 1186686</a>
+                </p>
+            </div>
+
+        </div>
+
+        {/* 3. ДОКУМЕНТЫ */}
+        <div className="text-left">
+            <h4 className="text-sm font-bold mb-8 text-gray-500 uppercase tracking-widest">Документы</h4>
+            <ul className="space-y-4 text-sm text-gray-400 font-medium">
+                <li>
+                    <Link href="/terms" className="hover:text-[#E85D04] transition">
+                        Условия использования
+                    </Link>
+                </li>
+                <li>
+                    <Link href="/privacy" className="hover:text-[#E85D04] transition">
+                        Политика конфиденциальности
+                    </Link>
+                </li>
+                <li>
+                    <Link href="/offer" className="hover:text-[#E85D04] transition">
+                        Публичная оферта
+                    </Link>
+                </li>
+                <li>
+                    <Link href="/refund" className="hover:text-[#E85D04] transition">
+                        Политика возврата
+                    </Link>
+                </li>
+            </ul>
+        </div>
+
+    </div>
+</footer>
+
+
 
              {/* МОДАЛКА ОПЛАТЫ */}
                        <PaymentModal 
