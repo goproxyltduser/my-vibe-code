@@ -1099,26 +1099,29 @@ export default function HomePage() {
                 <p className="text-gray-600 text-xs">© 2025 INTERNET COMMUNICATION SERVICE LTD. Все права защищены.</p>
                 
                 {/* ЛОГОТИПЫ ПЛАТЕЖЕК */}
-                <div className="mt-6 flex items-center gap-4">
-                    {/* Lava */}
-                    <Image
-                        src="/lava.png"
-                        alt="Lava Payment"
-                        width={120}
-                        height={40}
-                        className="object-contain opacity-80 hover:opacity-100 transition"
-                    />
+<div className="mt-8 flex items-center gap-6">
+    {/* Lava */}
+    <div className="relative w-28 h-10">
+        <Image
+            src="/lava.png"
+            alt="Lava Payment"
+            fill
+            className="object-contain opacity-80 hover:opacity-100 transition"
+        />
+    </div>
 
-                    {/* FreeKassa (Добавлено) */}
-                    <a href="https://freekassa.net" target="_blank" rel="noopener noreferrer" className="opacity-80 hover:opacity-100 transition">
-                        <img 
-                            src="https://cdn.freekassa.net/banners/small-white-1.png" 
-                            title="Прием платежей на сайте для физических лиц и т.д." 
-                            alt="FreeKassa"
-                            className="h-9 w-auto" 
-                        />
-                    </a>
-                </div>
+    {/* FreeKassa (ПРЯМАЯ ССЫЛКА ДЛЯ ПРОВЕРКИ ДОМЕНА) */}
+    <a href="https://freekassa.net" target="_blank" rel="noopener noreferrer" className="opacity-80 hover:opacity-100 transition">
+        <img 
+            src="https://cdn.freekassa.net/banners/small-white-1.png" 
+            title="Прием платежей на сайте для физических лиц и т.д." 
+            alt="FreeKassa"
+            style={{ display: 'block', height: '40px', width: 'auto' }} 
+        />
+    </a>
+</div>
+
+
             </div>
 
             {/* 2. КОНТАКТЫ */}
