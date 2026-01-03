@@ -11,11 +11,12 @@ const supabaseAdmin = createClient(
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-const DVNET_DOMAIN = 'https://cloud.dv.net';
-const DVNET_STORE_ID = 'c90fa863-b9fb-450f-93e0-736df5ed22c2';
-
+// Переменные окружения (должны быть в .env)
 const LAVA_SHOP_ID = process.env.LAVA_SHOP_ID;
 const LAVA_SECRET_KEY = process.env.LAVA_SECRET_KEY;
+const FREEKASSA_SHOP_ID = process.env.FREEKASSA_SHOP_ID;
+const FREEKASSA_SECRET_1 = process.env.FREEKASSA_SECRET_1;
+
 const DOMAIN = 'https://goproxy.tech'; 
 
 export async function POST(req) {
@@ -29,7 +30,7 @@ export async function POST(req) {
             userId,
             email,
             type = 'order',
-            provider = 'dvnet',
+            provider = 'dvnet', // Значение по умолчанию, но с фронта придет 'lava' или 'freekassa'
             referralId
         } = await req.json();
 
@@ -38,7 +39,6 @@ export async function POST(req) {
 
         // 1. АВТОРЕГИСТРАЦИЯ (Если гость)
         if (!finalUserId && email) {
-            // Проверяем, есть ли юзер
             const { data: existingUser } = await supabaseAdmin
                 .from('profiles')
                 .select('id')
@@ -48,15 +48,13 @@ export async function POST(req) {
             if (existingUser) {
                 finalUserId = existingUser.id;
             } else {
-                // Создаем нового. 
-                // ВАЖНО: redirectTo ведет на страницу, которая обработает вход
+                // Создаем нового пользователя с редиректом на профиль
                 const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
                     redirectTo: `${DOMAIN}/profile` 
                 });
                 
                 if (createError) {
-                    // Если ошибка "User already registered", пробуем найти его снова
-                    // (Иногда бывает гонка запросов)
+                    // Попытка найти снова при ошибке (гонка запросов)
                     const { data: retryUser } = await supabaseAdmin.from('profiles').select('id').eq('email', email).single();
                     if (retryUser) finalUserId = retryUser.id;
                     else return NextResponse.json({ error: 'Ошибка регистрации: ' + createError.message }, { status: 400 });
@@ -66,7 +64,7 @@ export async function POST(req) {
             }
         }
 
-        // Страховка: если юзер авторизован, но email не пришел с фронта
+        // Страховка: если юзер есть, но email не пришел
         if (finalUserId && !finalEmail) {
              const { data: u } = await supabaseAdmin.auth.admin.getUserById(finalUserId);
              finalEmail = u?.user?.email;
@@ -92,7 +90,7 @@ export async function POST(req) {
             quantity,
             period,
             // Нормализуем страну (ru, kz, us)
-            country: country ? country.toLowerCase() : 'ru', 
+            country: country ? country.toLowerCase() : 'ru',
             type: product.name?.toLowerCase().includes('ipv6') ? 'IPv6' : 'IPv4',
             operation_type: type,
             provider,
@@ -113,37 +111,37 @@ export async function POST(req) {
        
         // 3. ГЕНЕРАЦИЯ ССЫЛКИ
         let paymentUrl = '';
-        const amount = (amountCents / 100).toFixed(2);
+        const amountUsd = (amountCents / 100).toFixed(2);
         
-        // URL успеха - ведет на страницу успеха, где мы покажем "Спасибо"
-        const successUrl = `${DOMAIN}/success?amount=${amount}&order_id=${client_id}`;
+        // Получаем курс рубля для конвертации (общий для всех рублевых шлюзов)
+        let exchangeRate = 100; // Резервный курс
+        try {
+            const rateRes = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', { next: { revalidate: 3600 } });
+            if (rateRes.ok) {
+                const rateData = await rateRes.json();
+                exchangeRate = rateData.Valute.USD.Value;
+            }
+        } catch (e) {}
+
+        const amountRub = (parseFloat(amountUsd) * exchangeRate).toFixed(2);
         
+        // URL успеха
+        const successUrl = `${DOMAIN}/success?amount=${amountUsd}&order_id=${client_id}`;
+        
+        // === ЛОГИКА ВЫБОРА ПЛАТЕЖКИ ===
+
         if (provider === 'lava') {
             // === LAVA ===
             if (!LAVA_SHOP_ID || !LAVA_SECRET_KEY) return NextResponse.json({ error: 'Lava config missing' }, { status: 500 });
 
-            // Курс (хардкод 100 или запрос)
-            let exchangeRate = 100;
-            try {
-                const rateRes = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', { next: { revalidate: 3600 } });
-                if (rateRes.ok) {
-                    const rateData = await rateRes.json();
-                    exchangeRate = rateData.Valute.USD.Value;
-                }
-            } catch (e) {}
-
-            const rubAmount = parseFloat((parseFloat(amount) * exchangeRate).toFixed(2));
-
             const payload = {
-                sum: rubAmount,
+                sum: parseFloat(amountRub),
                 orderId: client_id,
                 shopId: LAVA_SHOP_ID,
                 successUrl: successUrl,
                 failUrl: `${DOMAIN}/profile`,
-                hookUrl: `${DOMAIN}/api/webhook/lava` // Лава иногда требует свой путь, но у нас универсальный dvnet-webhook тоже ловит json
+                hookUrl: `${DOMAIN}/api/webhook/lava` // Специфичный вебхук для Lava
             };
-            // ПРИМЕЧАНИЕ: Если ты используешь dvnet-webhook как универсальный, можно указать его:
-            // hookUrl: `${DOMAIN}/api/dvnet-webhook` 
 
             const signature = crypto.createHmac('sha256', LAVA_SECRET_KEY).update(JSON.stringify(payload)).digest('hex');
 
@@ -155,12 +153,24 @@ export async function POST(req) {
 
             const lavaResult = await lavaResponse.json();
             if (lavaResult.data?.url) paymentUrl = lavaResult.data.url;
-            else return NextResponse.json({ error: 'Lava Error' }, { status: 400 });
+            else return NextResponse.json({ error: 'Lava Error: ' + JSON.stringify(lavaResult) }, { status: 400 });
 
-        } else {
-            // === DV.NET ===
-            const encodedReturnUrl = encodeURIComponent(successUrl);
-            paymentUrl = `${DVNET_DOMAIN}/pay/store/${DVNET_STORE_ID}/${client_id}?amount=${amount}&return_url=${encodedReturnUrl}`;
+        } 
+        else if (provider === 'freekassa') {
+            // === FREEKASSA ===
+            if (!FREEKASSA_SHOP_ID || !FREEKASSA_SECRET_1) return NextResponse.json({ error: 'FreeKassa config missing' }, { status: 500 });
+
+            // Подпись: md5(MERCHANT_ID:AMOUNT:SECRET_1:ORDER_ID)
+            const signString = `${FREEKASSA_SHOP_ID}:${amountRub}:${FREEKASSA_SECRET_1}:${client_id}`;
+            const sign = crypto.createHash('md5').update(signString).digest('hex');
+
+            // Формируем ссылку
+            // m - ID магазина, oa - сумма, o - ID заказа, s - подпись, currency=RUB
+            paymentUrl = `https://pay.freekassa.ru/?m=${FREEKASSA_SHOP_ID}&oa=${amountRub}&o=${client_id}&s=${sign}&currency=RUB`;
+        } 
+        else {
+            // Если пришел неизвестный провайдер (например старый dvnet)
+            return NextResponse.json({ error: 'Выберите способ оплаты (Lava или FreeKassa)' }, { status: 400 });
         }
 
         return NextResponse.json({ url: paymentUrl });

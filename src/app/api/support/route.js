@@ -1,7 +1,7 @@
 // src/app/api/support/route.js
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { sendTelegramMessage } from '@/lib/telegram';
+import { sendAdminNotification } from '@/lib/telegram'; // <--- ОБНОВИЛИ ИМПОРТ
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -18,11 +18,12 @@ export async function POST(req) {
             user_id: userId, email, message
         }]);
 
-        // Шлем в телеграм
-        await sendTelegramMessage(
-            `📩 <b>Новое обращение!</b>\n` +
-            `От: ${email}\n` +
-            `Сообщение: ${message}`
+        // Шлем в телеграм (Форма с сайта)
+        await sendAdminNotification(
+            `🌐 <b>Заявка с сайта!</b>\n` +
+            `📧 Email: ${email}\n` +
+            `💬 Сообщение: ${message}\n\n` +
+            `<i>Ответьте клиенту на почту.</i>`
         );
 
         return NextResponse.json({ success: true });

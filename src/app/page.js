@@ -107,7 +107,11 @@ const PaymentModal = ({ isOpen, onClose, data, userBalance, onPayBalance, onPayG
                     <div className="text-center text-xs text-gray-400 uppercase my-2">- ИЛИ -</div>
                     
                     {/* КНОПКИ ПЛАТЕЖЕК */}
-                    <button onClick={() => onPayGateway('dvnet')} disabled={isProcessing} className="w-full py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 flex justify-between px-4"><span>DV.Net</span><span className="opacity-50 text-xs font-normal">Карты / Крипта</span></button>
+                    <button onClick={() => onPayGateway('freekassa')} disabled={isProcessing} className="w-full py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 flex justify-between px-4">
+                        <span>FreeKassa</span>
+                        <span className="opacity-50 text-xs font-normal">Все методы</span>
+                    </button>
+
                     <button onClick={() => onPayGateway('lava')} disabled={isProcessing} className="w-full py-3 bg-[#702cf9] text-white font-bold rounded-xl hover:bg-[#5b23cc] flex justify-between px-4"><span>Lava.ru</span><span className="opacity-50 text-xs font-normal">RUB / Qiwi</span></button>
                 </div>
             </div>
@@ -192,10 +196,123 @@ const PackageWidget = ({ product, quantities, handleBuy }) => {
         </div>
     );
 };
+// === КАРТОЧКА ТЕСТОВОГО ПЕРИОДА (FINAL LAYOUT) ===
+const TrialCard = ({ router, session }) => {
+    const [selectedOption, setSelectedOption] = useState('free');
+    const [country, setCountry] = useState('ru');
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const options = {
+        free: { days: 1, price: 0, label: '24 часа', oldPrice: 0.20 },
+        '3days': { days: 3, price: 0.49, label: '3 дня', oldPrice: 0.99 },
+        '5days': { days: 5, price: 0.79, label: '5 дней', oldPrice: 1.50 }
+    };
+
+    const handleTrialAction = async () => {
+        setIsProcessing(true);
+        const currentOpt = options[selectedOption];
+        try {
+            if (selectedOption === 'free') {
+                if (!session?.user) { router.push('/login?redirect=/profile'); return; }
+                const res = await fetch('/api/trial', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: session.user.id, country })
+                });
+                const data = await res.json();
+                if (res.ok) window.location.href = '/profile';
+                else alert(data.error || 'Ошибка');
+            } else {
+                const params = new URLSearchParams({
+                    product: 'IPv4 Trial', price: currentOpt.price.toString(),
+                    quantity: '1', period: currentOpt.days.toString(), unit: 'days', country
+                });
+                router.push(`/checkout?${params.toString()}`);
+            }
+        } catch (e) { alert('Ошибка сети'); } finally { setIsProcessing(false); }
+    };
+
+    return (
+        // КЛАССЫ КОНТЕЙНЕРА (Одинаковые с PricingCard)
+        <div className="flex flex-col border border-[#E85D04] border-2 p-8 rounded-2xl w-full max-w-sm m-4 bg-white relative shadow-lg hover:border-[#cc5200] transition-all duration-300">
+            
+            {/* БЕЙДЖИК */}
+            <div className="absolute top-0 right-0 px-4 py-1.5 rounded-bl-xl text-xs font-bold text-white bg-[#E85D04]">
+                Попробовать
+            </div>
+
+            {/* ЗАГОЛОВОК */}
+            <div className="mb-6">
+                <h3 className="text-2xl font-bold text-gray-900">ТЕСТ-ДРАЙВ</h3>
+                <p className="text-sm text-gray-500 mt-1">Попробуйте перед покупкой</p>
+            </div>
+
+            {/* ОСНОВНОЙ БЛОК НАСТРОЕК */}
+            <div className="space-y-5 mb-8">
+                <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Страна</label>
+                    <select value={country} onChange={(e) => setCountry(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:border-black focus:ring-0 outline-none text-gray-800 font-medium cursor-pointer">
+                        <option value="ru">🇷🇺 Россия</option>
+                        <option value="kz">🇰🇿 Казахстан</option>
+                        <option value="us">🇺🇸 США</option>
+                        <option value="fr">🇫🇷 Франция</option>
+                        <option value="ch">🇨🇭 Швейцария</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Срок</label>
+                    <div className="space-y-2">
+                        {Object.entries(options).map(([key, opt]) => (
+                            <div key={key} onClick={() => setSelectedOption(key)} className={`p-3 rounded-lg border cursor-pointer flex justify-between items-center transition-all ${selectedOption === key ? 'border-[#E85D04] bg-orange-50/50' : 'border-gray-200 bg-gray-50'}`}>
+                                <span className="font-bold text-gray-900 text-sm">{opt.label}</span>
+                                <div className="text-right">
+                                    <span className={`font-bold text-sm ${opt.price === 0 ? 'text-[#E85D04]' : 'text-gray-900'}`}>{opt.price === 0 ? 'Бесплатно' : `$${opt.price}`}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* НИЖНИЙ БЛОК (Прижат к низу) */}
+            <div className="mt-auto">
+                
+                {/* 1. БЛОК СКОРОСТИ (Подняли наверх) */}
+                <div className="flex justify-between items-center text-xs text-gray-600 mb-6 bg-gray-100 p-3 rounded-lg border border-gray-200">
+                    <span>Трафик: <strong>∞</strong></span>
+                    <span>Скорость: <strong>100 Мб/с</strong></span>
+                </div>
+
+                {/* 2. БЛОК ЦЕНЫ (ДОБАВИЛИ: как в PricingCard) */}
+                <div className="flex flex-col gap-1 mb-6 pt-6 border-t border-gray-100">
+                    <div className="flex justify-between items-end">
+                        <span className="text-gray-400 text-xs font-bold uppercase mb-1">Итого к оплате</span>
+                        <span className="text-3xl font-extrabold text-gray-900">
+                            {/* Если 0 - пишем $0.00 для красоты цифр, или можно текст FREE */}
+                            {options[selectedOption].price === 0 ? '$0.00' : `$${options[selectedOption].price}`}
+                        </span>
+                    </div>
+                </div>
+
+                {/* 3. КНОПКА */}
+                <button onClick={handleTrialAction} disabled={isProcessing} className="w-full py-4 bg-[#E85D04] text-white font-bold rounded-xl hover:bg-[#cc5200] transition-colors active:scale-95 duration-200 text-lg shadow-lg">
+                    {isProcessing ? '...' : 'Купить тест'}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+
+
+
+
+
+
+
 
 // === КАРТОЧКА ТАРИФА (КАЛЬКУЛЯТОР - ПОЛНЫЙ ФУНКЦИОНАЛ) ===
-// === КАРТОЧКА ТАРИФА (КАЛЬКУЛЯТОР) - ОБНОВЛЕННАЯ ===
-// === КАРТОЧКА ТАРИФА (КАЛЬКУЛЯТОР) - ЛОГИКА РЕДИРЕКТА НА CHECKOUT ===
 const PricingCard = ({ product, currentSession, router, userBalance }) => {
     const isIPv6 = product.name.toLowerCase().includes('ipv6');
     const minQty = product.min_quantity > 0 ? product.min_quantity : 1;
@@ -746,38 +863,44 @@ export default function HomePage() {
 
 
 
-            {/* 3. TARIFFS & PACKAGES */}
+                       {/* 3. TARIFFS & PACKAGES */}
             <section id="tariffs" className="pt-20 pb-0 bg-gray-50">
                 <div className="max-w-7xl mx-auto">
-                    
-                    {/* КАЛЬКУЛЯТОРЫ ТАРИФОВ */}
-                    <div className="flex justify-center flex-wrap gap-12 mb-24 items-start">
-                        {loading ? <div className="py-10 text-gray-400">Загрузка тарифов...</div> : products.map(product => (
-                            <PricingCard                                   key={product.id} 
-                                product={product} 
-                                currentSession={session} 
-                                userBalance={balance} // <--- ДОБАВЛЕНА ЭТА СТРОКА
-                                router={router}
-                            />
+                   
+                    {/* КАЛЬКУЛЯТОРЫ ТАРИФОВ + ТЕСТОВЫЙ ПЕРИОД */}
+                    <div className="flex justify-center flex-wrap gap-12 mb-24 items-stretch">
+                        {loading ? (
+                            <div className="py-10 text-gray-400">Загрузка тарифов...</div>
+                        ) : (
+                            <>
+                                {/* 1. КАРТОЧКА ТЕСТОВОГО ПЕРИОДА (ВСТАВИЛИ СЮДА) */}
+                                <TrialCard router={router} session={session} />
 
-
-                        ))}
+                                {/* 2. ОБЫЧНЫЕ ТАРИФЫ */}
+                                {products.map(product => (
+                                    <PricingCard 
+                                        key={product.id}
+                                        product={product}
+                                        currentSession={session}
+                                        userBalance={balance}
+                                        router={router}
+                                    />
+                                ))}
+                            </>
+                        )}
                     </div>
 
                     {/* ГОТОВЫЕ ПАКЕТЫ (ТЕМНЫЕ ВИДЖЕТЫ) */}
                     <div className="max-w-5xl mx-auto">
                         <h3 className="text-3xl font-extrabold text-center mb-12 uppercase text-gray-900">Готовые предложения</h3>
-                        
+                       
                         <div className="flex flex-col md:flex-row gap-8 justify-center items-start">
                             {/* IPv4 Packages Widget */}
-                                                       {/* IPv4 */}
                             {products.find(p => !p.name.toLowerCase().includes('ipv6')) && (
-                                <PackageWidget 
+                                <PackageWidget
                                     product={products.find(p => !p.name.toLowerCase().includes('ipv6'))}
                                     quantities={[10, 20, 50, 100]}
-                                    // ИЗМЕНЕНО: Вызываем открытие модалки с расчетом цены
                                     handleBuy={(prod, qty) => {
-                                        // Расчет цены (упрощенный, тот же что и в виджете)
                                         const discount = Math.min(Math.floor(qty / 5) * 5, 40);
                                         const price = prod.price_per_unit * ((100 - discount) / 100) * qty;
                                         openPackageModal(prod, qty, Math.round(price));
@@ -785,12 +908,11 @@ export default function HomePage() {
                                 />
                             )}
 
-                            {/* IPv6 */}
+                            {/* IPv6 Packages Widget */}
                             {products.find(p => p.name.toLowerCase().includes('ipv6')) && (
-                                <PackageWidget 
+                                <PackageWidget
                                     product={products.find(p => p.name.toLowerCase().includes('ipv6'))}
                                     quantities={[100, 250, 500, 1000]}
-                                    // ИЗМЕНЕНО:
                                     handleBuy={(prod, qty) => {
                                         const discount = Math.min(Math.floor(qty / 50) * 5, 40);
                                         const price = prod.price_per_unit * ((100 - discount) / 100) * qty;
@@ -798,8 +920,6 @@ export default function HomePage() {
                                     }}
                                 />
                             )}
-
-
                         </div>
                     </div>
 
@@ -811,11 +931,12 @@ export default function HomePage() {
                             <a href="#contacts" className="inline-block px-10 py-4 bg-gray-900 text-white font-bold rounded-xl hover:bg-primary transition shadow-lg">
                                 Обратиться в поддержку
                             </a>
-                        </div>
-                                               
+                        </div>         
                     </div>
                 </div>
             </section>
+
+
 
                        {/* === НОВЫЙ БЛОК: ПРЕИМУЩЕСТВА (ТЕМНЫЙ) === */}
             <section id="benefits" className="py-24 px-6 bg-[#222222] text-white">

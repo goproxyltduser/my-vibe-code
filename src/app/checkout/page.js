@@ -185,19 +185,23 @@ function CheckoutContent() {
                 <div className="mb-8 space-y-3">
                     <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Способ оплаты</label>
                    
-                    <button
-                        onClick={() => { setPaymentMethod('gateway'); setPaymentProvider('dvnet'); }}
-                        className={`w-full p-4 rounded-xl border-2 flex justify-between items-center transition ${paymentProvider === 'dvnet' && paymentMethod === 'gateway' ? 'border-[#E85D04] bg-orange-50/50' : 'border-gray-100 hover:border-gray-300'}`}
+                                       <button
+                        onClick={() => { setPaymentMethod('gateway'); setPaymentProvider('freekassa'); }}
+                        className={`w-full p-4 rounded-xl border-2 flex justify-between items-center transition ${paymentProvider === 'freekassa' && paymentMethod === 'gateway' ? 'border-[#E85D04] bg-orange-50/50' : 'border-gray-100 hover:border-gray-300'}`}
                     >
-                        <span className="font-bold">DV.Net (crypto)</span>
-                        {paymentProvider === 'dvnet' && paymentMethod === 'gateway' && <span className="text-[#E85D04]">✔</span>}
+                        <span className="font-bold flex items-center gap-2">
+                           FreeKassa <span className="text-xs font-normal text-gray-500">(Карты РФ/Visa/Mastercard, СБП, crypto)</span>
+                        </span>
+                        {paymentProvider === 'freekassa' && paymentMethod === 'gateway' && <span className="text-[#E85D04]">✔</span>}
                     </button>
+
+
 
                     <button
                         onClick={() => { setPaymentMethod('gateway'); setPaymentProvider('lava'); }}
                         className={`w-full p-4 rounded-xl border-2 flex justify-between items-center transition ${paymentProvider === 'lava' && paymentMethod === 'gateway' ? 'border-[#702cf9] bg-purple-50' : 'border-gray-100 hover:border-gray-300'}`}
                     >
-                        <span className="font-bold">Lava.ru (wallet)</span>
+                        <span className="font-bold">Lava.ru (СБП, Карты РФ)</span>
                         {paymentProvider === 'lava' && paymentMethod === 'gateway' && <span className="text-[#702cf9]">✔</span>}
                     </button>
 
