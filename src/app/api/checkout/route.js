@@ -3,22 +3,26 @@ import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// -- КОНФИГУРАЦИЯ --
+// -- КОНФИГУРАЦИЯ SUPABASE --
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-// Переменные окружения
+// -- ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ --
+// Считываем их здесь, чтобы проверить доступность сразу
 const LAVA_SHOP_ID = process.env.LAVA_SHOP_ID;
 const LAVA_SECRET_KEY = process.env.LAVA_SECRET_KEY;
+
 const FREEKASSA_SHOP_ID = process.env.FREEKASSA_SHOP_ID;
-const FREEKASSA_SECRET_1 = process.env.FREEKASSA_SECRET_1; // Обязательно проверь это в .env!
-const DOMAIN = 'https://goproxy.tech';
+const FREEKASSA_SECRET_1 = process.env.FREEKASSA_SECRET_1; // Для создания ссылки нужен Секрет 1
+
+const DOMAIN = 'https://goproxy.tech'; // Твой домен
 
 export async function POST(req) {
     try {
+        const body = await req.json();
         const {
             product = {},
             quantity = 0,
@@ -28,15 +32,18 @@ export async function POST(req) {
             userId,
             email,
             type = 'order',
-            provider = 'dvnet',
+            provider = 'dvnet', // 'lava' или 'freekassa'
             referralId
-        } = await req.json();
+        } = body;
 
         let finalUserId = userId;
         let finalEmail = email;
 
-        // 1. АВТОРЕГИСТРАЦИЯ (Если гость)
+        // ============================================================
+        // 1. ЛОГИКА АВТОРИЗАЦИИ / РЕГИСТРАЦИИ
+        // ============================================================
         if (!finalUserId && email) {
+            // Ищем пользователя по email
             const { data: existingUser } = await supabaseAdmin
                 .from('profiles')
                 .select('id')
@@ -46,11 +53,13 @@ export async function POST(req) {
             if (existingUser) {
                 finalUserId = existingUser.id;
             } else {
+                // Если нет - создаем инвайт
                 const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
                     redirectTo: `${DOMAIN}/profile`
                 });
                 
                 if (createError) {
+                    // Иногда юзер есть в Auth, но нет в Profiles, пробуем найти снова
                     const { data: retryUser } = await supabaseAdmin.from('profiles').select('id').eq('email', email).single();
                     if (retryUser) finalUserId = retryUser.id;
                     else return NextResponse.json({ error: 'Ошибка регистрации: ' + createError.message }, { status: 400 });
@@ -60,14 +69,17 @@ export async function POST(req) {
             }
         }
 
+        // Пытаемся достать email, если есть ID
         if (finalUserId && !finalEmail) {
              const { data: u } = await supabaseAdmin.auth.admin.getUserById(finalUserId);
              finalEmail = u?.user?.email;
         }
 
-        if (!finalUserId) return NextResponse.json({ error: 'Не удалось определить пользователя' }, { status: 400 });
+        if (!finalUserId) {
+            return NextResponse.json({ error: 'Не удалось определить пользователя' }, { status: 400 });
+        }
 
-        // --- ПРИВЯЗКА РЕФЕРАЛА ---
+        // Привязка реферала
         if (referralId && finalUserId && referralId !== finalUserId) {
             try {
                 await supabaseAdmin
@@ -78,7 +90,9 @@ export async function POST(req) {
             } catch (e) {}
         }
 
-        // 2. СОЗДАЕМ ЗАКАЗ
+        // ============================================================
+        // 2. СОЗДАНИЕ ЗАКАЗА В БД
+        // ============================================================
         const client_id = uuidv4();
         
         const metadata = {
@@ -89,7 +103,6 @@ export async function POST(req) {
             operation_type: type,
             provider,
             customer_email: finalEmail
-            // unit: 'months' // <-- Если у тебя есть выбор дней/месяцев, добавь это поле с фронтенда
         };
         
         const orderData = {
@@ -104,11 +117,13 @@ export async function POST(req) {
         const { error: orderError } = await supabaseAdmin.from('orders').insert([orderData]);
         if (orderError) return NextResponse.json({ error: 'Ошибка БД: ' + orderError.message }, { status: 500 });
         
+        // ============================================================
         // 3. КОНВЕРТАЦИЯ В РУБЛИ
+        // ============================================================
         let paymentUrl = '';
         const amountUsd = (amountCents / 100).toFixed(2);
         
-        let exchangeRate = 100; // Фолбек курс
+        let exchangeRate = 100; // Резервный курс
         try {
             const rateRes = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', { next: { revalidate: 3600 } });
             if (rateRes.ok) {
@@ -120,11 +135,16 @@ export async function POST(req) {
         const amountRub = (parseFloat(amountUsd) * exchangeRate).toFixed(2);
         const successUrl = `${DOMAIN}/success?amount=${amountUsd}&order_id=${client_id}`;
 
-        // === ВЫБОР ПЛАТЕЖКИ ===
+        // ============================================================
+        // 4. ГЕНЕРАЦИЯ ССЫЛКИ НА ОПЛАТУ
+        // ============================================================
 
         if (provider === 'lava') {
             // === LAVA ===
-            if (!LAVA_SHOP_ID || !LAVA_SECRET_KEY) return NextResponse.json({ error: 'Lava config missing' }, { status: 500 });
+            if (!LAVA_SHOP_ID || !LAVA_SECRET_KEY) {
+                console.error('LAVA ERROR: Keys missing in .env');
+                return NextResponse.json({ error: 'Server Config Error (Lava)' }, { status: 500 });
+            }
 
             const payload = {
                 sum: parseFloat(amountRub),
@@ -144,22 +164,38 @@ export async function POST(req) {
             });
 
             const lavaResult = await lavaResponse.json();
-            if (lavaResult.data?.url) paymentUrl = lavaResult.data.url;
-            else return NextResponse.json({ error: 'Lava Error: ' + JSON.stringify(lavaResult) }, { status: 400 });
-
-        } else if (provider === 'freekassa') {
-            // === FREEKASSA (Метод генерации ссылки, самый надежный) ===
-            if (!FREEKASSA_SHOP_ID || !FREEKASSA_SECRET_1) {
-                return NextResponse.json({ error: 'FreeKassa config missing' }, { status: 500 });
+            if (lavaResult.data?.url) {
+                paymentUrl = lavaResult.data.url;
+            } else {
+                return NextResponse.json({ error: 'Lava Error: ' + JSON.stringify(lavaResult) }, { status: 400 });
             }
 
-            // Формула: md5(merchant_id:amount:secret1:currency:order_id)
+        } else if (provider === 'freekassa') {
+            // === FREEKASSA (Method: Form URL) ===
+            
+            // Проверка наличия ключей
+            if (!FREEKASSA_SHOP_ID || !FREEKASSA_SECRET_1) {
+                console.error('FK FATAL: Config missing. ShopID:', FREEKASSA_SHOP_ID, 'Secret exists:', !!FREEKASSA_SECRET_1);
+                return NextResponse.json({ error: 'Server Config Error (FreeKassa)' }, { status: 500 });
+            }
+
             const currency = 'RUB';
+            // Формула: md5(merchant_id:amount:secret1:currency:order_id)
             const signSource = `${FREEKASSA_SHOP_ID}:${amountRub}:${FREEKASSA_SECRET_1}:${currency}:${client_id}`;
+            
+            // !!! БЛОК ДИАГНОСТИКИ (Удалишь его, когда всё заработает) !!!
+            console.log('============= ДИАГНОСТИКА FREEKASSA =============');
+            console.log('1. Shop ID (из env):', FREEKASSA_SHOP_ID);
+            console.log('2. Amount (RUB):', amountRub);
+            console.log('3. Secret 1 (из env):', FREEKASSA_SECRET_1 ? (FREEKASSA_SECRET_1.substring(0, 3) + '***') : 'UNDEFINED (!!!)');
+            console.log('4. Order ID:', client_id);
+            console.log('5. Строка для подписи:', signSource);
+            console.log('=================================================');
+            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
             const signature = crypto.createHash('md5').update(signSource).digest('hex');
 
-            // Формируем ссылку на оплату
-            // em - email пользователя, чтобы чек ушел ему
+            // Формируем ссылку
             paymentUrl = `https://pay.freekassa.ru/?m=${FREEKASSA_SHOP_ID}&oa=${amountRub}&o=${client_id}&s=${signature}&currency=${currency}&em=${finalEmail}`;
         }
 
