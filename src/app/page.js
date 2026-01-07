@@ -185,7 +185,7 @@ const PackageWidget = ({ product, quantities, handleBuy }) => {
                     <div className="font-bold text-lg text-white">Больше 2000 IP</div>
                 </div>
                 <a 
-                    href="https://t.me/maxim_hayd" 
+                    href="https://t.me/goproxysupport_bot" 
                     target="_blank"
                     className="flex items-center justify-between w-full p-3 border border-[#E85D04] text-[#E85D04] rounded-xl font-bold hover:bg-[#E85D04] hover:text-white transition text-sm"
                 >
@@ -743,7 +743,7 @@ export default function HomePage() {
 
     {/* ДЕСКТОПНЫЕ КНОПКИ (Право) */}
     <div className="hidden md:flex w-auto justify-end gap-3 shrink-0">
-            <a href="https://t.me/maxim_hayd" target="_blank" className="px-4 py-2 text-xs lg:text-sm border border-gray-600 text-gray-300 font-bold rounded-lg hover:border-white hover:text-white transition whitespace-nowrap">Опт</a>
+            <a href="https://t.me/goproxysupport_bot" target="_blank" className="px-4 py-2 text-xs lg:text-sm border border-gray-600 text-gray-300 font-bold rounded-lg hover:border-white hover:text-white transition whitespace-nowrap">Опт</a>
             <Link href={session ? "/profile" : "/login"} className="px-5 py-2 text-xs lg:text-sm bg-[#E85D04] text-white font-bold rounded-lg hover:bg-[#cc5200] transition shadow-lg whitespace-nowrap">
             {session ? "Кабинет" : "Войти"}
         </Link>
@@ -780,7 +780,7 @@ export default function HomePage() {
                 <Link href={session ? "/profile" : "/login"} className="w-full py-3 bg-[#E85D04] text-white font-bold rounded-lg text-center">
                     {session ? "Личный кабинет" : "Войти"}
                 </Link>
-                 <a href="https://t.me/maxim_hayd" target="_blank" className="w-full py-3 border border-gray-600 text-gray-300 font-bold rounded-lg text-center">
+                 <a href="https://t.me/goproxysupport_bot" target="_blank" className="w-full py-3 border border-gray-600 text-gray-300 font-bold rounded-lg text-center">
                     Опт
                 </a>
             </div>
@@ -1267,7 +1267,7 @@ export default function HomePage() {
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .24z"/>
                         </svg>
                     </span>
-                    <a href="https://t.me/maxim_hayd" target="_blank" className="hover:text-white transition text-gray-300">Telegram Support</a>
+                    <a href="https://t.me/goproxysupport_bot" target="_blank" className="hover:text-white transition text-gray-300">Telegram Support</a>
                 </p>
 
 
