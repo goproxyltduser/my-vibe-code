@@ -1,3 +1,4 @@
+import { sendAdminNotification } from '@/lib/telegram';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
@@ -6,7 +7,7 @@ import crypto from 'crypto';
 const FREEKASSA_SHOP_ID = process.env.FREEKASSA_SHOP_ID;
 // ВАЖНО: Тут используется ИМЕННО ВТОРОЕ секретное слово!
 const FREEKASSA_SECRET_2 = process.env.FREEKASSA_SECRET_2; 
-const PROXY_API_SECRET = "ebcdca5ab698991b9b5670425d3e7ad20e56888740bb996f0f48051d35650e69";
+const PROXY_API_SECRET = process.env.PROXY_API_SECRET;
 
 export async function POST(req) {
     const supabaseAdmin = createClient(
@@ -58,6 +59,15 @@ export async function POST(req) {
         if (order.status === 'paid') {
             return new NextResponse('YES');
         }
+ try {
+            await sendAdminNotification(
+                `✅ <b>ОПЛАТА FreeKassa!</b>\n` +
+                `💰 Сумма: ${amount} RUB\n` +
+                `🆔 Заказ: <code>${merchant_order_id}</code>`
+            );
+        } catch (e) {}
+
+        return new NextResponse('YES');
 
         // 3. ОБНОВЛЯЕМ СТАТУС
         await supabaseAdmin

@@ -1,11 +1,11 @@
-// src/app/api/webhook/lava/route.js
+//src/app/api/webhook/lava/route.js
+import { sendAdminNotification } from '@/lib/telegram';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// Секретный ключ друга (для автовыдачи)
-const PROXY_API_SECRET = "ebcdca5ab698991b9b5670425d3e7ad20e56888740bb996f0f48051d35650e69";
-// Секретный ключ Lava (из .env)
+// !!! Секретный ключ PROXY API (лучше перенеси его в .env, но пока оставил тут)
+const PROXY_API_SECRET = process.env.PROXY_API_SECRET;
 const LAVA_SECRET_KEY = process.env.LAVA_SECRET_KEY;
 
 export async function POST(req) {
@@ -24,21 +24,18 @@ export async function POST(req) {
 
         console.log(`Lava Webhook: Order ${data.orderId}, Status ${data.status}`);
 
-        // 1. ПРОВЕРКА ПОДПИСИ (Lava)
-        // Lava считает HMAC SHA256 от тела запроса
+        // 1. ПРОВЕРКА ПОДПИСИ
         const mySign = crypto.createHmac('sha256', LAVA_SECRET_KEY).update(bodyText).digest('hex');
-
         if (signature !== mySign) {
             console.error('Lava: Неверная подпись!');
             return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
         }
 
         // 2. ИЩЕМ ЗАКАЗ
-        // Lava присылает наш ID в поле orderId
         const { data: order } = await supabaseAdmin
             .from('orders')
             .select('*')
-            .eq('session_id', data.orderId) 
+            .eq('session_id', data.orderId)
             .single();
 
         if (!order) {
@@ -46,28 +43,38 @@ export async function POST(req) {
             return NextResponse.json({ error: 'Order not found' }, { status: 404 });
         }
 
+        // Если уже оплачен - просто отвечаем ОК
         if (order.status === 'paid') {
             return NextResponse.json({ status: 'ok' });
         }
 
-        // Проверяем статус оплаты (success или completed)
+        // Проверяем статус транзакции от Lava
         if (data.status !== 'success' && data.status !== 'completed') {
-            return NextResponse.json({ status: 'ok' }); // Игнорируем другие статусы
+            return NextResponse.json({ status: 'ok' }); 
         }
+   try {
+            await sendAdminNotification(
+                `✅ <b>ОПЛАТА LAVA!</b>\n` +
+                `💰 Сумма: ${data.amount} RUB\n` +
+                `🆔 Заказ: <code>${data.orderId}</code>`
+            );
+        } catch (e) {}
 
-        // 3. ОБНОВЛЯЕМ СТАТУС НА PAID (Сразу!)
+        return NextResponse.json({ status: 'ok' });
+
+        // 3. ОБНОВЛЯЕМ СТАТУС ЗАКАЗА
         await supabaseAdmin
             .from('orders')
-            .update({ 
-                status: 'paid', 
-                payment_details: { provider: 'lava', ...data } 
+            .update({
+                status: 'paid',
+                payment_details: { provider: 'lava', ...data }
             })
             .eq('id', order.id);
 
-        console.log("Lava: Статус PAID установлен. Выдача...");
+        console.log("Lava: Оплата прошла. Начинаем выдачу...");
 
         // ============================================================
-        // 4. ПАРТНЕРСКАЯ ПРОГРАММА
+        // 4. ПАРТНЕРСКАЯ ПРОГРАММА (Копия рабочей логики)
         // ============================================================
         try {
             const { data: buyerProfile } = await supabaseAdmin
@@ -83,7 +90,8 @@ export async function POST(req) {
                     .eq('user_id', order.user_id)
                     .eq('status', 'paid');
                 
-                const isFirstPurchase = count === 1; 
+                // Если это первая покупка - 20%, иначе 10%
+                const isFirstPurchase = count === 1;
                 const percent = isFirstPurchase ? 20 : 10;
                 
                 const orderAmountUsd = order.amount_total / 100;
@@ -114,36 +122,36 @@ export async function POST(req) {
         } catch (e) { console.error("Партнерка ошибка:", e); }
 
         // ============================================================
-        // 5. АВТОВЫДАЧА (С фиксом toLowerCase)
+        // 5. АВТОВЫДАЧА (Полная копия логики баланса)
         // ============================================================
         try {
-            if (order.product_name.includes('Пополнение')) {
-                // Пополнение баланса
+            // Проверка: это пополнение баланса или покупка товара?
+            if (order.product_name && order.product_name.includes('Пополнение')) {
                 const { data: p } = await supabaseAdmin.from('profiles').select('balance').eq('id', order.user_id).single();
                 await supabaseAdmin.from('profiles').update({ balance: (p?.balance || 0) + order.amount_total }).eq('id', order.user_id);
+                console.log(`Lava: Баланс пополнен для ${order.user_id}`);
             } else {
-                // Прокси
-                const rawCountry = order.metadata?.country || 'ru';
+                // ВЫДАЧА ПРОКСИ
                 
-                // ВАЖНО: Приводим к маленьким буквам для друга (us, ru, kz)
-                const targetPrefix = rawCountry.toLowerCase(); 
+                // 1. Извлекаем данные из метадаты заказа
+                const metadata = order.metadata || {};
+                const safeCountry = metadata.country ? metadata.country.toLowerCase() : 'ru';
+                const quantity = parseInt(metadata.quantity) || 1;
                 
-                // Определяем срок действия
-const period = parseInt(order.metadata?.period) || 1;
-const unit = order.metadata?.unit || 'months'; // 'days' или 'months'
+                // 2. Расчет времени (как в балансе)
+                const period = parseInt(metadata.period) || 1;
+                const unit = metadata.unit || 'months'; // по умолчанию месяцы
+                
+                let hours;
+                if (unit === 'days') {
+                    hours = period * 24;
+                } else {
+                    hours = period * 30 * 24;
+                }
 
-let hours;
-if (unit === 'days') {
-    hours = period * 24; // Если 3 дня, то 3 * 24 = 72 часа
-} else {
-    hours = period * 30 * 24; // По умолчанию месяцы
-}
+                console.log(`Lava: Запрос прокси. Country: ${safeCountry}, Hours: ${hours}, Qty: ${quantity}`);
 
-
-                const qty = parseInt(order.metadata?.quantity) || 1;
-
-                console.log(`Lava Auto-Issue: ${targetPrefix}`);
-
+                // 3. Запрос к поставщику
                 const proxyResponse = await fetch("https://api.goproxy.tech/api/webhook/create-proxy", {
                     method: "POST",
                     headers: {
@@ -151,29 +159,39 @@ if (unit === 'days') {
                         "X-Webhook-Secret": PROXY_API_SECRET
                     },
                     body: JSON.stringify({
+                        // Формируем уникальный ID так же, как в балансе (userId_sessionId)
                         user_id: `${order.user_id}_${order.session_id}`,
                         proxy_type: "http",
                         duration_hours: hours,
                         traffic_limit_mb: 0,
-                        count: qty, 
-                        country_prefix: targetPrefix // Отправляем маленькие буквы
+                        count: quantity,
+                        country_prefix: safeCountry // Важно: маленькие буквы
                     })
                 });
 
                 if (proxyResponse.ok) {
                     const result = await proxyResponse.json();
                     if (!result.error) {
+                        // Сохраняем данные прокси в заказ
                         await supabaseAdmin.from('orders').update({ proxy_data: result }).eq('id', order.id);
-                        console.log(`Прокси ${targetPrefix} выданы.`);
+                        console.log(`Lava: Прокси успешно выданы и сохранены в заказ ${order.id}`);
+                    } else {
+                        console.error("Lava Proxy API Error (Logic):", result.error);
                     }
+                } else {
+                    console.error("Lava Proxy API Error (Network):", proxyResponse.status);
+                    const errText = await proxyResponse.text();
+                    console.error("Response:", errText);
                 }
             }
-        } catch (e) { console.error("Автовыдача ошибка:", e); }
+        } catch (e) { 
+            console.error("Автовыдача ошибка (Catch):", e); 
+        }
 
         return NextResponse.json({ status: 'ok' });
 
     } catch (e) {
-        console.error('Lava Error:', e);
+        console.error('Lava Global Error:', e);
         return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
     }
 }

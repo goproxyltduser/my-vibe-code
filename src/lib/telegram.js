@@ -1,10 +1,11 @@
 // src/lib/telegram.js
 
-const BOT_TOKEN = "8478053685:AAEac2R9pD61LyHGxuK_7Se0y7VmSU2zpTU";
-const ADMIN_CHAT_ID = "1672303852";
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_ID;
 
-// 1. Универсальная функция отправки (кому угодно)
+// 1. Универсальная функция отправки
 export const sendMessage = async (chatId, text) => {
+    if (!BOT_TOKEN) return; // Защита если нет токена
     try {
         const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
         await fetch(url, {
@@ -21,11 +22,12 @@ export const sendMessage = async (chatId, text) => {
     }
 };
 
-// 2. Функция специально для уведомлений админу (обертка)
+// 2. Уведомление админу
 export const sendAdminNotification = async (text) => {
-    await sendMessage(ADMIN_CHAT_ID, text);
+    if (ADMIN_CHAT_ID) {
+        await sendMessage(ADMIN_CHAT_ID, text);
+    }
 };
 
-// Экспортируем ID админа, пригодится для проверки в вебхуке
 export const ADMIN_ID = ADMIN_CHAT_ID;
 
