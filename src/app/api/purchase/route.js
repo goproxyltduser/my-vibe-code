@@ -1,14 +1,11 @@
-import { sendAdminNotification } from '@/lib/telegram';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
+import { sendAdminNotification } from '@/lib/telegram';
 
-// !!! СЕКРЕТНЫЙ КЛЮЧ PROXY API !!!
-const PROXY_API_SECRET = process.env.PROXY_API_SECRET;
-
-// === НАСТРОЙКИ ЦЕН (ОДИНАКОВЫЕ С CHECKOUT) ===
+// === НАСТРОЙКИ ЦЕН ===
 const BASE_PRICE_IPV4 = 2.39;
-const BASE_PRICE_IPV6 = 0.29; // 2.90$ за 10 шт
+const BASE_PRICE_IPV6 = 0.29; 
 const TRIAL_PRICES = {
     '3': 0.49,
     '5': 0.79
@@ -23,15 +20,13 @@ export async function POST(req) {
 
     try {
         const body = await req.json();
-        // Мы берем от клиента ТОЛЬКО параметры товара.
-        // Цену (amountCents) мы ИГНОРИРУЕМ, чтобы нельзя было прислать отрицательное число.
         const { 
             userId, 
             product = {}, 
             quantity = 1, 
             period = 1, 
             country = 'ru',
-            unit = 'months' // 'days' или 'months'
+            unit = 'months' 
         } = body;
 
         console.log(`Покупка с баланса. User: ${userId}, Product: ${product.name}`);
@@ -49,14 +44,11 @@ export async function POST(req) {
         // -- ЛОГИКА ТЕСТОВОГО ПЕРИОДА --
         if (unit === 'days' || productNameLower.includes('trial')) {
             const trialPrice = TRIAL_PRICES[safePeriod.toString()];
-            if (!trialPrice) {
-                return NextResponse.json({ error: 'Неверный срок тестового периода' }, { status: 400 });
-            }
+            if (!trialPrice) return NextResponse.json({ error: 'Неверный срок' }, { status: 400 });
             calculatedUsd = trialPrice;
             productName = `IPv4 Trial (${safePeriod} days)`;
-        
-        // -- ЛОГИКА ОБЫЧНОЙ ПОКУПКИ --
         } else {
+            // -- ЛОГИКА ОБЫЧНОЙ ПОКУПКИ --
             const isIPv6 = productNameLower.includes('ipv6');
             let basePricePerUnit = isIPv6 ? BASE_PRICE_IPV6 : BASE_PRICE_IPV4;
             
@@ -79,40 +71,46 @@ export async function POST(req) {
             if (safePeriod === 6) periodDiscount = 0.10;
 
             calculatedUsd = costWithVolumeDiscount * safePeriod * (1 - periodDiscount);
-            
             calculatedUsd = Math.round(calculatedUsd * 100) / 100;
             productName = product.name || (isIPv6 ? 'IPv6 Proxy' : 'IPv4 Proxy');
         }
 
-        // Переводим доллары в центы (для базы данных и баланса)
-        // ВАЖНО: Math.abs защитит от любых глюков, но тут и так всё безопасно
         const amountToDeductCents = Math.round(Math.abs(calculatedUsd) * 100);
 
         // ============================================================
-               // ============================================================
-        // 2 & 3. БЕЗОПАСНОЕ СПИСАНИЕ И СОЗДАНИЕ ЗАКАЗА (New Secure Version)
+        // 2. ПРОВЕРКА БАЛАНСА ПОЛЬЗОВАТЕЛЯ
         // ============================================================
         
-        // Вызываем нашу защищенную SQL-функцию
-        // Она сама проверит баланс и спишет деньги, если их хватает.
-        // Это происходит мгновенно, хакер не успеет вклиниться.
-        const { data: isSuccess, error: rpcError } = await supabaseAdmin
-            .rpc('deduct_balance', { 
-                user_id: userId, 
-                amount: amountToDeductCents 
-            });
+        // ВОТ ЗДЕСЬ МЫ ИСПРАВИЛИ ОШИБКУ "profile is not defined"
+        const { data: profile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('balance, email, referred_by')
+            .eq('id', userId)
+            .single();
 
-        // Если функция вернула ошибку или false (денег нет)
-        if (rpcError || !isSuccess) {
+        if (profileError || !profile) {
+            return NextResponse.json({ error: 'Пользователь не найден' }, { status: 404 });
+        }
+
+        if ((profile.balance || 0) < amountToDeductCents) {
             return NextResponse.json({ error: 'Недостаточно средств на балансе' }, { status: 400 });
         }
 
-        // --- ЕСЛИ КОД ДОШЕЛ СЮДА, ДЕНЬГИ УЖЕ СПИСАНЫ ---
-        // Теперь создаем запись о заказе, как и раньше.
+        // ============================================================
+        // 3. СПИСАНИЕ СРЕДСТВ
+        // ============================================================
+        const newBalance = (profile.balance || 0) - amountToDeductCents;
+        const { error: updateError } = await supabaseAdmin
+            .from('profiles')
+            .update({ balance: newBalance })
+            .eq('id', userId);
+
+        if (updateError) return NextResponse.json({ error: 'Ошибка списания' }, { status: 500 });
 
         const sessionId = uuidv4();
         const safeCountry = country ? country.toLowerCase() : 'ru';
 
+        // Создаем запись заказа
         const metadata = {
             quantity: safeQty,
             period: safePeriod,
@@ -137,26 +135,26 @@ export async function POST(req) {
             .select()
             .single();
 
-        if (orderError) {
-            // КРИТИЧЕСКАЯ СИТУАЦИЯ: Деньги списали, а заказ создать не смогли (например, сбой БД).
-            // В идеальном мире тут нужно делать возврат (rollback), 
-            // но для начала просто залогируем ошибку, чтобы поддержка могла начислить вручную.
-            console.error("CRITICAL: Деньги списаны, но заказ не создан!", orderError);
-            return NextResponse.json({ error: 'Ошибка создания заказа. Обратитесь в поддержку.' }, { status: 500 });
-        }
+        if (orderError) return NextResponse.json({ error: 'Ошибка создания заказа' }, { status: 500 });
 
         // ============================================================
-        // ДАЛЕЕ ИДЕТ ПУНКТ 4 (ПАРТНЕРКА) - ЕГО НЕ ТРОГАЕМ
+        // 4. ТЕЛЕГРАМ УВЕДОМЛЕНИЕ
         // ============================================================
-
-
+        try {
+            await sendAdminNotification(
+                `⚖️ <b>Списание с баланса!</b>\n` +
+                `👤 User ID: ${userId}\n` +
+                `📦 Товар: ${productName}\n` +
+                `💰 Списано: $${calculatedUsd}\n` +
+                `🆔 Заказ: <code>${sessionId}</code>`
+            );
+        } catch (e) { console.error('TG Error:', e); }
 
         // ============================================================
-        // 4. ПАРТНЕРСКАЯ ПРОГРАММА
+        // 5. ПАРТНЕРСКАЯ ПРОГРАММА
         // ============================================================
         if (profile.referred_by) {
             try {
-                // ... (Логика партнерки осталась прежней, она безопасна)
                 const { count } = await supabaseAdmin
                     .from('orders')
                     .select('*', { count: 'exact', head: true })
@@ -184,7 +182,7 @@ export async function POST(req) {
         }
 
         // ============================================================
-        // 5. АВТОВЫДАЧА (Запрос к поставщику)
+        // 6. АВТОВЫДАЧА (Используем ключ из ENV)
         // ============================================================
         try {
             let hours;
@@ -200,7 +198,8 @@ export async function POST(req) {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-Webhook-Secret": PROXY_API_SECRET
+                    // !!! БЕРЕМ КЛЮЧ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ !!!
+                    "X-Webhook-Secret": process.env.PROXY_API_SECRET 
                 },
                 body: JSON.stringify({
                     user_id: `${userId}_${sessionId}`,
@@ -220,18 +219,7 @@ export async function POST(req) {
             }
         } catch (e) { console.error("Auto-issue Error:", e); }
 
-         try {
-            await sendAdminNotification(
-                `⚖️ <b>Списание с баланса!</b>\n` +
-                `👤 User ID: ${userId}\n` +
-                `📦 Товар: ${productName}\n` +
-                `💰 Списано: $${Math.abs(calculatedUsd)}\n` +
-                `🆔 Заказ: <code>${sessionId}</code>`
-            );
-        } catch (e) {}
-
         return NextResponse.json({ success: true });
-
 
     } catch (error) {
         console.error('Purchase Error:', error);
